@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:18.3-bookworm
+    environment:
+      POSTGRES_DB: donations
+      POSTGRES_USER: donations
+      POSTGRES_PASSWORD: donations
+    ports:
+      - "5432:5432"

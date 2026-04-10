@@ -1,0 +1,39 @@
+# macOS
+.DS_Store
+
+# Gradle
+.gradle/
+build/
+out/
+
+# Kotlin
+.kotlin/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Environment and local overrides
+.env
+.env.*
+!.env.example
+application-local.yaml
+application-local.yml
+src/main/resources/application-local.yaml
+src/main/resources/application-local.yml
+
+# Spring Boot
+spring.log
+
+# Testcontainers / Docker local data
+.testcontainers/
+
+# Local tooling
+.claude/

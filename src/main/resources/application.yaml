@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: donations
+  datasource:
+    url: jdbc:postgresql://localhost:5432/donations
+    driver-class-name: org.postgresql.Driver
+    username: donations
+    password: donations
+  flyway:
+    enabled: false
+  devtools:
+    add-properties: false
+server:
+  port: 8081
