@@ -1,0 +1,2 @@
+-- Baseline migration: establishes Flyway tracking
+-- Domain tables will be added in subsequent migrations

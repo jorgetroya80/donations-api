@@ -7,8 +7,14 @@ spring:
     username: donations
     password: donations
   flyway:
-    enabled: false
+    enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
   devtools:
     add-properties: false
+  jackson:
+    default-property-inclusion: non_null
 server:
   port: 8081
