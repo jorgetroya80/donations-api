@@ -43,3 +43,25 @@
 ### Agent write permission denials
 - **Problem:** Both specialist agents (kotlin-specialist, spring-boot-engineer) were denied Write tool permissions, preventing them from creating files directly.
 - **Workaround:** Agents produced the correct code in their output; the coordinator (main Claude session) wrote the files manually using the agents' output.
+
+## Phase 3: User Management
+
+### AutoConfigureMockMvc package moved in Spring Boot 4
+- **Problem:** `org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc` does not exist in Spring Boot 4. Tests failed to compile with `Unresolved reference 'web'`.
+- **Fix:** Switched to `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc` (new package in Spring Boot 4).
+
+### PasswordEncoder.encode() returns nullable under -Xjsr305=strict
+- **Problem:** `PasswordEncoder.encode()` returns `String?` in Kotlin with `-Xjsr305=strict`, causing assignment type mismatch when assigning to `User.password: String`.
+- **Fix:** Added non-null assertion `!!` on all `passwordEncoder.encode()` calls (safe because BCrypt never returns null).
+
+### SecurityContextHolder.authentication nullable under -Xjsr305=strict
+- **Problem:** `SecurityContextHolder.getContext().authentication` returns `Authentication?` under strict null safety. Direct `.name` access failed compilation.
+- **Fix:** Used safe call `?.name` with fallback `?: throw IllegalStateException("No authenticated user")`.
+
+### MockMvc does not return HTTP cookies
+- **Problem:** Integration tests expected session cookies via `result.response.cookies`, but MockMvc doesn't populate HTTP cookies for session tracking. All tests failed with "No session cookie returned".
+- **Fix:** Replaced cookie-based session handling with `MockHttpSession`. Extract session via `result.request.getSession(false) as MockHttpSession`, pass to subsequent requests via `.session(session)`.
+
+## Phase 4: Donor Management
+
+No new issues. All patterns from Phase 3 (AutoConfigureMockMvc package, MockHttpSession, null safety) carried over cleanly. Compiled and all tests passed on first attempt.
