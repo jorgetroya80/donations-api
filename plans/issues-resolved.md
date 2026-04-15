@@ -65,3 +65,9 @@
 ## Phase 4: Donor Management
 
 No new issues. All patterns from Phase 3 (AutoConfigureMockMvc package, MockHttpSession, null safety) carried over cleanly. Compiled and all tests passed on first attempt.
+
+## Phase 5: Donation Recording
+
+### Test dates must respect @PastOrPresent validation
+- **Problem:** Integration test used future date `2026-06-10` in test data, but `@PastOrPresent` on `donationDate` rejected it with 400. Test ran on April 15, 2026.
+- **Fix:** Changed test date to `2026-04-10` (past date). Tests with date-based validation must use dates that are in the past relative to when tests run.
