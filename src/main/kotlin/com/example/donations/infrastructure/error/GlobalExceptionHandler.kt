@@ -48,6 +48,14 @@ class GlobalExceptionHandler {
     fun handleNotFound(ex: RuntimeException): ResponseEntity<ErrorResponse> =
         respond(HttpStatus.NOT_FOUND, ex.message ?: "Resource not found")
 
+    @ExceptionHandler(IllegalStateException::class)
+    fun handleIllegalState(ex: IllegalStateException): ResponseEntity<ErrorResponse> =
+        respond(HttpStatus.CONFLICT, ex.message ?: "Conflict")
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgument(ex: IllegalArgumentException): ResponseEntity<ErrorResponse> =
+        respond(HttpStatus.BAD_REQUEST, ex.message ?: "Bad request")
+
     @ExceptionHandler(Exception::class)
     fun handleAll(ex: Exception): ResponseEntity<ErrorResponse> {
         log.error("Unexpected error", ex)
