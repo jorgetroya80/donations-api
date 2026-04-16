@@ -71,3 +71,11 @@ No new issues. All patterns from Phase 3 (AutoConfigureMockMvc package, MockHttp
 ### Test dates must respect @PastOrPresent validation
 - **Problem:** Integration test used future date `2026-06-10` in test data, but `@PastOrPresent` on `donationDate` rejected it with 400. Test ran on April 15, 2026.
 - **Fix:** Changed test date to `2026-04-10` (past date). Tests with date-based validation must use dates that are in the past relative to when tests run.
+
+## Phase 6: Expense Recording
+
+No new issues. Module mirrors donation pattern (entity, repository, DTOs, service, controller, integration tests). Reused `PaymentMethod` enum from donation package. Compiled and all 16 tests passed on first attempt.
+
+## Phase 7: Financial Reports
+
+No new issues. Four read-only report endpoints (donation summary, expense summary, balance, donor statement) with aggregate JPQL queries. Reused existing repositories with added query methods. All 12 tests passed on first attempt.
