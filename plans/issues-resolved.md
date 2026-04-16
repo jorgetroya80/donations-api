@@ -79,3 +79,9 @@ No new issues. Module mirrors donation pattern (entity, repository, DTOs, servic
 ## Phase 7: Financial Reports
 
 No new issues. Four read-only report endpoints (donation summary, expense summary, balance, donor statement) with aggregate JPQL queries. Reused existing repositories with added query methods. All 12 tests passed on first attempt.
+
+## Phase 8: Springdoc/OpenAPI and Production Hardening
+
+### Logout endpoint not in OpenAPI spec
+- **Problem:** Test asserted `/api/v1/logout` exists in OpenAPI paths, but logout is handled by Spring Security's `LogoutFilter`, not a `@RestController` mapping. Springdoc only documents controller endpoints.
+- **Fix:** Removed `/api/v1/logout` assertion from OpenAPI spec test. All other 14 controller-mapped endpoints verified present.

@@ -18,3 +18,14 @@ spring:
     default-property-inclusion: non_null
 server:
   port: 8081
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
