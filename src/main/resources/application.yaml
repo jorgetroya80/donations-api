@@ -18,6 +18,18 @@ spring:
     default-property-inclusion: non_null
 server:
   port: 8081
+app:
+  cors:
+    enabled: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+app:
+  cors:
+    enabled: true
 
 ---
 spring:

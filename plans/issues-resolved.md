@@ -85,3 +85,7 @@ No new issues. Four read-only report endpoints (donation summary, expense summar
 ### Logout endpoint not in OpenAPI spec
 - **Problem:** Test asserted `/api/v1/logout` exists in OpenAPI paths, but logout is handled by Spring Security's `LogoutFilter`, not a `@RestController` mapping. Springdoc only documents controller endpoints.
 - **Fix:** Removed `/api/v1/logout` assertion from OpenAPI spec test. All other 14 controller-mapped endpoints verified present.
+
+## PRD-2: Dockerize API for Frontend Development
+
+No new issues. Dockerfile (multi-stage Temurin 24 JDK→JRE), compose.yaml with api service + postgres healthcheck, Actuator health endpoint, CORS config gated by `app.cors.enabled` property (true in dev profile). All 92 tests passed on first attempt (88 existing + 4 new CORS/actuator tests).

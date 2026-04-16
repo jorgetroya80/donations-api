@@ -2,7 +2,7 @@
 
 ## Context
 
-Frontend app (React + Vite, separate repo) calls this API during dev. Goal: frontend devs run `docker compose up`, get API + PostgreSQL ready. No frontend Dockerfile needed — frontend runs natively via `npm run dev`.
+Frontend app (React + Vite, separate repo) needs to call this API during development. Goal: frontend devs run `docker compose up` and get API + PostgreSQL ready. No frontend Dockerfile needed — frontend runs natively via `npm run dev`.
 
 ## Changes
 
@@ -12,7 +12,7 @@ Frontend app (React + Vite, separate repo) calls this API during dev. Goal: fron
 
 - **Stage 1 (build):** Eclipse Temurin 24 JDK, copy source, run `./gradlew bootJar`
 - **Stage 2 (runtime):** Eclipse Temurin 24 JRE, copy JAR from build stage, expose 8081
-- `.dockerignore` excludes `.gradle`, `build`, `.git`, etc.
+- Use `.dockerignore` to exclude `.gradle`, `build`, `.git`, etc.
 
 ### 2. Create `.dockerignore`
 
