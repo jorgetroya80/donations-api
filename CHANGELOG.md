@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/jorgetroya80/donations-api/compare/v1.1.0...v1.1.1) (2026-05-08)
+
+
+### Bug Fixes
+
+* **release:** scope permissions per-job, add workflow_dispatch and  fix ARM64 publish ([#10](https://github.com/jorgetroya80/donations-api/issues/10)) ([e89f7c3](https://github.com/jorgetroya80/donations-api/commit/e89f7c3790fb60aa53bbb4fe2995cbd5f15195b7))
+
 ## [1.1.0](https://github.com/jorgetroya80/donations-api/compare/v1.0.0...v1.1.0) (2026-04-17)
 
 
