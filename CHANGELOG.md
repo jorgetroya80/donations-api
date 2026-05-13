@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/jorgetroya80/donations-api/compare/v1.1.1...v1.2.0) (2026-05-13)
+
+
+### Features
+
+* **config:** externalize DB credentials and CORS origins ([#13](https://github.com/jorgetroya80/donations-api/issues/13)) ([9ab5c50](https://github.com/jorgetroya80/donations-api/commit/9ab5c5006b83c864cd1847e70e4e0ea692b03037))
+
 ## [1.1.1](https://github.com/jorgetroya80/donations-api/compare/v1.1.0...v1.1.1) (2026-05-08)
 
 
