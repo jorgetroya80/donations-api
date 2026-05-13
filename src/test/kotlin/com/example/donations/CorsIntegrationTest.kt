@@ -25,7 +25,7 @@ class CorsIntegrationTest {
     @Autowired
     lateinit var mockMvc: MockMvc
 
-    private val allowedOrigin = "http://localhost:5173"
+    private val allowedOrigin = "http://localhost:8080"
     private val disallowedOrigin = "http://evil.com"
 
     @Test

@@ -2,10 +2,10 @@ spring:
   application:
     name: donations
   datasource:
-    url: jdbc:postgresql://localhost:5432/donations
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/donations}
     driver-class-name: org.postgresql.Driver
-    username: donations
-    password: donations
+    username: ${SPRING_DATASOURCE_USERNAME:donations}
+    password: ${SPRING_DATASOURCE_PASSWORD:donations}
   flyway:
     enabled: true
   jpa:
@@ -21,6 +21,7 @@ server:
 app:
   cors:
     enabled: false
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:8080}
 
 ---
 spring:

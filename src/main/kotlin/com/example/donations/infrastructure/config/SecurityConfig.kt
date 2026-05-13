@@ -26,6 +26,9 @@ class SecurityConfig {
     @Value("\${app.cors.enabled:false}")
     private var corsEnabled: Boolean = false
 
+    @Value("\${app.cors.allowed-origins}")
+    private lateinit var corsAllowedOrigins: String
+
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain = http
         .csrf { it.disable() }
@@ -69,7 +72,7 @@ class SecurityConfig {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val config = CorsConfiguration()
-        config.allowedOrigins = listOf("http://localhost:5173")
+        config.allowedOrigins = corsAllowedOrigins.split(",").map { it.trim() }
         config.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         config.allowedHeaders = listOf("*")
         config.allowCredentials = true
