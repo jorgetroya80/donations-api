@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/jorgetroya80/donations-api/compare/v1.2.0...v1.3.0) (2026-05-19)
+
+
+### Features
+
+* update GH actions versions ([#16](https://github.com/jorgetroya80/donations-api/issues/16)) ([3a30614](https://github.com/jorgetroya80/donations-api/commit/3a306149db24784b267d15c27fb48b5880515bba))
+
 ## [1.2.0](https://github.com/jorgetroya80/donations-api/compare/v1.1.1...v1.2.0) (2026-05-13)
 
 
