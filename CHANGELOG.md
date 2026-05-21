@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/jorgetroya80/donations-api/compare/v1.4.0...v1.4.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* sync pnpm lockfile after removing @hey-api/client-fetch peer dep ([#21](https://github.com/jorgetroya80/donations-api/issues/21)) ([d0c8133](https://github.com/jorgetroya80/donations-api/commit/d0c813335dd6c6fe76b16c1730c6518febe1b501))
+
 ## [1.4.0](https://github.com/jorgetroya80/donations-api/compare/v1.3.0...v1.4.0) (2026-05-21)
 
 
