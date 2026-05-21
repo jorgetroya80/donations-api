@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@hey-api/client-fetch':
-        specifier: ^0.13.1
-        version: 0.13.1(@hey-api/openapi-ts@0.97.2(typescript@5.9.3))
     devDependencies:
       '@hey-api/openapi-ts':
         specifier: 0.97.2
@@ -20,12 +16,6 @@ importers:
         version: 5.9.3
 
 packages:
-
-  '@hey-api/client-fetch@0.13.1':
-    resolution: {integrity: sha512-29jBRYNdxVGlx5oewFgOrkulZckpIpBIRHth3uHFn1PrL2ucMy52FvWOY3U3dVx2go1Z3kUmMi6lr07iOpUqqA==}
-    deprecated: Starting with v0.73.0, this package is bundled directly inside @hey-api/openapi-ts.
-    peerDependencies:
-      '@hey-api/openapi-ts': < 2
 
   '@hey-api/codegen-core@0.8.1':
     resolution: {integrity: sha512-Iciv2vUCJTW9lWM/ROvyZLblmcbYJHPuXfzb1SzeDVVn4xEXu2ilLU1pq3fn+09FZ/Y0P7VyvRE47UDU6om8xA==}
@@ -227,10 +217,6 @@ packages:
     engines: {node: '>=20'}
 
 snapshots:
-
-  '@hey-api/client-fetch@0.13.1(@hey-api/openapi-ts@0.97.2(typescript@5.9.3))':
-    dependencies:
-      '@hey-api/openapi-ts': 0.97.2(typescript@5.9.3)
 
   '@hey-api/codegen-core@0.8.1':
     dependencies:
