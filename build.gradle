@@ -5,6 +5,7 @@ plugins {
 	id 'org.springframework.boot' version '4.0.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'org.graalvm.buildtools.native' version '0.11.5'
+	id 'org.springdoc.openapi-gradle-plugin' version '1.9.0'
 }
 
 group = 'com.example'
@@ -50,4 +51,14 @@ kotlin {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+openApi {
+	apiDocsUrl = 'http://localhost:8081/v3/api-docs.yaml'
+	outputDir = file("${project.buildDir}/openapi")
+	outputFileName = 'openapi.yaml'
+}
+
+tasks.named('forkedSpringBootRun') {
+	dependsOn 'processAot', 'compileAotJava', 'compileAotKotlin', 'processAotResources'
 }

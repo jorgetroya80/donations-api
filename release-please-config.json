@@ -1,9 +1,12 @@
 {
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
     ".": {
       "release-type": "simple",
       "bump-minor-pre-major": false,
       "bump-patch-for-minor-pre-major": false
     }
-  }
+  },
+  "pull-request-header": ":rocket: New Release is coming",
+  "pull-request-footer": "This PR was generated with Release Please"
 }

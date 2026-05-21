@@ -1,0 +1,29 @@
+{
+  "name": "@jorgetroya80/donations-api-client",
+  "version": "0.0.0",
+  "description": "Generated TypeScript client for Church Donations API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "generate": "openapi-ts",
+    "build": "tsc"
+  },
+  "packageManager": "pnpm@11.1.1",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jorgetroya80/donations-api.git"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.97.2",
+    "typescript": "^5.0.0"
+  }
+}
