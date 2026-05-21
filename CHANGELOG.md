@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/jorgetroya80/donations-api/compare/v1.3.0...v1.4.0) (2026-05-21)
+
+
+### Features
+
+* generate and publish typed API client npm package on release ([#19](https://github.com/jorgetroya80/donations-api/issues/19)) ([5140514](https://github.com/jorgetroya80/donations-api/commit/51405146245015c5bc23fb07620d97e7b94307fc))
+
 ## [1.3.0](https://github.com/jorgetroya80/donations-api/compare/v1.2.0...v1.3.0) (2026-05-19)
 
 
