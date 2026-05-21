@@ -85,11 +85,11 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18.3-bookworm
         env:
-          POSTGRES_DB: donations
-          POSTGRES_USER: donations
-          POSTGRES_PASSWORD: donations
+          POSTGRES_DB: ${{ vars.CI_POSTGRES_DB }}
+          POSTGRES_USER: ${{ vars.CI_POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ vars.CI_POSTGRES_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
@@ -114,7 +114,7 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11
 
