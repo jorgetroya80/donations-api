@@ -37,7 +37,7 @@ class SecurityConfig {
             auth
                 .requestMatchers("/api/v1/login").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                 .anyRequest().authenticated()
         }
         .sessionManagement { session ->

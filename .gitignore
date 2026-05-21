@@ -37,3 +37,7 @@ spring.log
 
 # Local tooling
 .claude/
+
+# api-client
+packages/api-client/node_modules/
+packages/api-client/dist/
