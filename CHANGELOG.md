@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/jorgetroya80/donations-api/compare/v1.4.1...v1.5.0) (2026-05-22)
+
+
+### Features
+
+* rename dni_nie to national_id for international generality ([#24](https://github.com/jorgetroya80/donations-api/issues/24)) ([a3b4fff](https://github.com/jorgetroya80/donations-api/commit/a3b4fff2f00ea97fa1bdbbc446418294dde57be9))
+
 ## [1.4.1](https://github.com/jorgetroya80/donations-api/compare/v1.4.0...v1.4.1) (2026-05-21)
 
 
