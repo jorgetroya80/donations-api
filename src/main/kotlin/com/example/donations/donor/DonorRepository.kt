@@ -4,5 +4,5 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface DonorRepository : JpaRepository<Donor, Long> {
 
-    fun existsByDniNie(dniNie: String): Boolean
+    fun existsByNationalId(nationalId: String): Boolean
 }

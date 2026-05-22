@@ -59,12 +59,12 @@ class DonorManagementTest {
         ).andExpect(status().isCreated)
     }
 
-    private fun createDonor(session: MockHttpSession, fullName: String, dniNie: String): MvcResult {
+    private fun createDonor(session: MockHttpSession, fullName: String, nationalId: String): MvcResult {
         return mockMvc.perform(
             post("/api/v1/donors")
                 .session(session)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"fullName":"$fullName","dniNie":"$dniNie"}""")
+                .content("""{"fullName":"$fullName","nationalId":"$nationalId"}""")
         ).andReturn()
     }
 
@@ -88,12 +88,12 @@ class DonorManagementTest {
             post("/api/v1/donors")
                 .session(operatorSession)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"fullName":"Juan Garcia","dniNie":"12345678Z","email":"juan@example.com","phone":"612345678","address":"Calle Mayor 1"}""")
+                .content("""{"fullName":"Juan Garcia","nationalId":"12345678Z","email":"juan@example.com","phone":"612345678","address":"Calle Mayor 1"}""")
         )
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.id").isNumber)
             .andExpect(jsonPath("$.fullName").value("Juan Garcia"))
-            .andExpect(jsonPath("$.dniNie").value("12345678Z"))
+            .andExpect(jsonPath("$.nationalId").value("12345678Z"))
             .andExpect(jsonPath("$.email").value("juan@example.com"))
             .andExpect(jsonPath("$.password").doesNotExist())
     }
@@ -105,23 +105,23 @@ class DonorManagementTest {
             post("/api/v1/donors")
                 .session(operatorSession)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"fullName":"Maria Lopez","dniNie":"X1234567L"}""")
+                .content("""{"fullName":"Maria Lopez","nationalId":"X1234567L"}""")
         )
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.fullName").value("Maria Lopez"))
-            .andExpect(jsonPath("$.dniNie").value("X1234567L"))
+            .andExpect(jsonPath("$.nationalId").value("X1234567L"))
     }
 
     @Test
-    @DisplayName("Create donor with duplicate dniNie returns 409")
-    fun createDonorWithDuplicateDniNieReturns409() {
+    @DisplayName("Create donor with duplicate nationalId returns 409")
+    fun createDonorWithDuplicateNationalIdReturns409() {
         createDonor(operatorSession, "Juan Garcia", "12345678Z")
 
         mockMvc.perform(
             post("/api/v1/donors")
                 .session(operatorSession)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"fullName":"Pedro Sanchez","dniNie":"12345678Z"}""")
+                .content("""{"fullName":"Pedro Sanchez","nationalId":"12345678Z"}""")
         ).andExpect(status().isConflict)
     }
 
@@ -132,7 +132,7 @@ class DonorManagementTest {
             post("/api/v1/donors")
                 .session(operatorSession)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"fullName":"","dniNie":"12345678Z"}""")
+                .content("""{"fullName":"","nationalId":"12345678Z"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.fields").exists())
@@ -145,7 +145,7 @@ class DonorManagementTest {
             post("/api/v1/donors")
                 .session(operatorSession)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"fullName":"Invalid DNI","dniNie":"12345678A"}""")
+                .content("""{"fullName":"Invalid DNI","nationalId":"12345678A"}""")
         ).andExpect(status().isBadRequest)
     }
 
@@ -156,7 +156,7 @@ class DonorManagementTest {
             post("/api/v1/donors")
                 .session(operatorSession)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"fullName":"Short DNI","dniNie":"1234567Z"}""")
+                .content("""{"fullName":"Short DNI","nationalId":"1234567Z"}""")
         ).andExpect(status().isBadRequest)
     }
 
@@ -167,7 +167,7 @@ class DonorManagementTest {
             post("/api/v1/donors")
                 .session(operatorSession)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"fullName":"Bad Format","dniNie":"ABC"}""")
+                .content("""{"fullName":"Bad Format","nationalId":"ABC"}""")
         ).andExpect(status().isBadRequest)
     }
 
@@ -226,7 +226,7 @@ class DonorManagementTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.fullName").value("Juan Garcia Martinez"))
-            .andExpect(jsonPath("$.dniNie").value("12345678Z"))
+            .andExpect(jsonPath("$.nationalId").value("12345678Z"))
     }
 
     @Test
@@ -246,8 +246,8 @@ class DonorManagementTest {
     }
 
     @Test
-    @DisplayName("Update donor dniNie to duplicate returns 409")
-    fun updateDonorDniNieToDuplicateReturns409() {
+    @DisplayName("Update donor nationalId to duplicate returns 409")
+    fun updateDonorNationalIdToDuplicateReturns409() {
         createDonor(operatorSession, "Juan Garcia", "12345678Z")
         val secondResult = createDonor(operatorSession, "Maria Lopez", "X1234567L")
         val secondId = extractId(secondResult.response.contentAsString)
@@ -256,7 +256,7 @@ class DonorManagementTest {
             put("/api/v1/donors/$secondId")
                 .session(operatorSession)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"dniNie":"12345678Z"}""")
+                .content("""{"nationalId":"12345678Z"}""")
         ).andExpect(status().isConflict)
     }
 

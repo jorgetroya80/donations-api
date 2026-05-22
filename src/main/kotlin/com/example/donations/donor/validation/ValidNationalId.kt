@@ -6,10 +6,10 @@ import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
-@Constraint(validatedBy = [DniNieValidator::class])
+@Constraint(validatedBy = [NationalIdValidator::class])
 @MustBeDocumented
-annotation class ValidDniNie(
-    val message: String = "Invalid DNI/NIE format",
+annotation class ValidNationalId(
+    val message: String = "Invalid national ID format",
     val groups: Array<KClass<*>> = [],
     val payload: Array<KClass<out Payload>> = [],
 )

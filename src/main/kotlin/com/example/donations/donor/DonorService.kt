@@ -22,13 +22,13 @@ class DonorService(
 
     @Transactional
     fun createDonor(request: CreateDonorRequest): Donor {
-        if (donorRepository.existsByDniNie(request.dniNie)) {
-            throw IllegalStateException("A donor with DNI/NIE '${request.dniNie}' already exists")
+        if (donorRepository.existsByNationalId(request.nationalId)) {
+            throw IllegalStateException("A donor with national ID '${request.nationalId}' already exists")
         }
 
         val donor = Donor(
             fullName = request.fullName,
-            dniNie = request.dniNie,
+            nationalId = request.nationalId,
             email = request.email,
             phone = request.phone,
             address = request.address,
@@ -42,11 +42,11 @@ class DonorService(
         val donor = donorRepository.findById(id)
             .orElseThrow { NotFoundException("Donor not found with id: $id") }
 
-        request.dniNie?.let { newDniNie ->
-            if (newDniNie != donor.dniNie && donorRepository.existsByDniNie(newDniNie)) {
-                throw IllegalStateException("A donor with DNI/NIE '$newDniNie' already exists")
+        request.nationalId?.let { newNationalId ->
+            if (newNationalId != donor.nationalId && donorRepository.existsByNationalId(newNationalId)) {
+                throw IllegalStateException("A donor with national ID '$newNationalId' already exists")
             }
-            donor.dniNie = newDniNie
+            donor.nationalId = newNationalId
         }
 
         request.fullName?.let { donor.fullName = it }

@@ -256,12 +256,12 @@ class FinancialReportsTest {
         return match.groupValues[1].toLong()
     }
 
-    private fun createDonor(session: MockHttpSession, fullName: String, dniNie: String): Long {
+    private fun createDonor(session: MockHttpSession, fullName: String, nationalId: String): Long {
         val result = mockMvc.perform(
             post("/api/v1/donors")
                 .session(session)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"fullName":"$fullName","dniNie":"$dniNie"}""")
+                .content("""{"fullName":"$fullName","nationalId":"$nationalId"}""")
         ).andExpect(status().isCreated).andReturn()
         return extractId(result.response.contentAsString)
     }

@@ -12,8 +12,8 @@ class Donor(
     @Column(name = "full_name", nullable = false)
     var fullName: String,
 
-    @Column(name = "dni_nie", nullable = false, unique = true, length = 20)
-    var dniNie: String,
+    @Column(name = "national_id", nullable = false, unique = true, length = 20)
+    var nationalId: String,
 
     @Column(name = "email")
     var email: String? = null,
