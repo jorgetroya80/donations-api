@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/jorgetroya80/donations-api/compare/v1.5.0...v1.6.0) (2026-05-22)
+
+
+### Features
+
+* update docker compose to run API and DB ([#26](https://github.com/jorgetroya80/donations-api/issues/26)) ([3346085](https://github.com/jorgetroya80/donations-api/commit/33460854fb28f6ae76be81eba3e673e855b9ef08))
+
 ## [1.5.0](https://github.com/jorgetroya80/donations-api/compare/v1.4.1...v1.5.0) (2026-05-22)
 
 
