@@ -1,6 +1,6 @@
 package com.example.donations.donor
 
-import com.example.donations.donor.validation.ValidDniNie
+import com.example.donations.donor.validation.ValidNationalId
 import jakarta.validation.constraints.NotBlank
 import java.time.Instant
 
@@ -8,9 +8,9 @@ data class CreateDonorRequest(
     @field:NotBlank(message = "Full name is required")
     val fullName: String,
 
-    @field:NotBlank(message = "DNI/NIE is required")
-    @field:ValidDniNie
-    val dniNie: String,
+    @field:NotBlank(message = "National ID is required")
+    @field:ValidNationalId
+    val nationalId: String,
 
     val email: String? = null,
     val phone: String? = null,
@@ -20,8 +20,8 @@ data class CreateDonorRequest(
 data class UpdateDonorRequest(
     val fullName: String? = null,
 
-    @field:ValidDniNie
-    val dniNie: String? = null,
+    @field:ValidNationalId
+    val nationalId: String? = null,
 
     val email: String? = null,
     val phone: String? = null,
@@ -32,7 +32,7 @@ data class UpdateDonorRequest(
 data class DonorResponse(
     val id: Long,
     val fullName: String,
-    val dniNie: String,
+    val nationalId: String,
     val email: String?,
     val phone: String?,
     val address: String?,
@@ -44,7 +44,7 @@ data class DonorResponse(
         fun from(donor: Donor): DonorResponse = DonorResponse(
             id = donor.id!!,
             fullName = donor.fullName,
-            dniNie = donor.dniNie,
+            nationalId = donor.nationalId,
             email = donor.email,
             phone = donor.phone,
             address = donor.address,

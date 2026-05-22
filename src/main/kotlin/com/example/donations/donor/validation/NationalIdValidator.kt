@@ -3,7 +3,7 @@ package com.example.donations.donor.validation
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
 
-class DniNieValidator : ConstraintValidator<ValidDniNie, String?> {
+class NationalIdValidator : ConstraintValidator<ValidNationalId, String?> {
 
     companion object {
         private const val CHECK_LETTERS = "TRWAGMYFPDXBNJZSQVHLCKE"
