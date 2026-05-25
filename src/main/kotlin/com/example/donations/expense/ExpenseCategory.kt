@@ -8,4 +8,5 @@ enum class ExpenseCategory {
     MISSIONS,
     MAINTENANCE,
     OTHER,
+    IRPF,
 }
