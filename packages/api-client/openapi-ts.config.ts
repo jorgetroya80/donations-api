@@ -2,7 +2,7 @@ import { defineConfig } from '@hey-api/openapi-ts';
 
 export default defineConfig({
   input: '../../build/openapi/openapi.yaml',
-  output: 'src',
+  output: 'src/generated',
   plugins: [
     '@hey-api/typescript',
     '@hey-api/sdk',
