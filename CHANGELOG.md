@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/jorgetroya80/donations-api/compare/v1.6.0...v1.7.0) (2026-05-25)
+
+
+### Features
+
+* export createClient and createConfig from API client package ([#29](https://github.com/jorgetroya80/donations-api/issues/29)) ([548bbad](https://github.com/jorgetroya80/donations-api/commit/548bbadb3e04d2fd062b425c91b987b1902937ef))
+
 ## [1.6.0](https://github.com/jorgetroya80/donations-api/compare/v1.5.0...v1.6.0) (2026-05-22)
 
 
