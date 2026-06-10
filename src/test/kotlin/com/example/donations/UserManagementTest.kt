@@ -172,6 +172,22 @@ class UserManagementTest {
     // --- Update user ---
 
     @Test
+    @DisplayName("Update user with blank username returns 400 with field error")
+    fun updateUserWithBlankUsernameReturns400() {
+        val createResult = createUser("blankrename")
+        val userId = extractId(createResult.response.contentAsString)
+
+        mockMvc.perform(
+            put("/api/v1/users/$userId")
+                .session(adminSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"   "}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.fields.username").exists())
+    }
+
+    @Test
     @DisplayName("Admin updates user roles returns 200 with changed roles")
     fun updateUserRolesReturns200() {
         val createResult = createUser("updateroles")

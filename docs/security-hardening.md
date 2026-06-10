@@ -48,6 +48,6 @@ Harden the authentication/session layer so a deployed instance is not exploitabl
 
 ## Open Questions / Follow-ups
 
-- **#9 LOW:** `UpdateUserRequest.username` accepts a blank string — add validation on the update path.
-- **#10 LOW:** Swagger route matchers are `permitAll` in every profile; safe only while prod always runs the `prod` profile (springdoc disabled). Consider profile-guarded matchers.
+- **#9 LOW — fixed:** `UpdateUserRequest.username` rejects blank strings (`@Pattern`; null still allowed for partial updates). Test: `UserManagementTest`.
+- **#10 LOW — fixed:** Swagger route matchers are `permitAll` only while springdoc is enabled (`springdoc.api-docs.enabled`); with springdoc disabled (prod) those routes require authentication. Test: `SwaggerSecurityTest`.
 - **Frontend (donations-frontend):** handle 403 `PASSWORD_CHANGE_REQUIRED` and `mustChangePassword` in the login response by redirecting to a change-password screen. Needs a ticket in that repo.

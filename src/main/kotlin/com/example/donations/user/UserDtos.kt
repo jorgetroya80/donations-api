@@ -2,6 +2,7 @@ package com.example.donations.user
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
+import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.time.Instant
 
@@ -20,6 +21,8 @@ data class CreateUserRequest(
 )
 
 data class UpdateUserRequest(
+    // Pattern skips null (partial update); when present, must contain a non-whitespace char
+    @field:Pattern(regexp = """.*\S.*""", message = "Username must not be blank")
     val username: String? = null,
 
     @field:Size(min = 8, message = "Password must be at least 8 characters")

@@ -29,6 +29,9 @@ class SecurityConfig {
     @Value("\${app.cors.allowed-origins}")
     private lateinit var corsAllowedOrigins: String
 
+    @Value("\${springdoc.api-docs.enabled:true}")
+    private var apiDocsEnabled: Boolean = true
+
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain = http
         .csrf { it.disable() }
@@ -37,8 +40,11 @@ class SecurityConfig {
             auth
                 .requestMatchers("/api/v1/login").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
-                .anyRequest().authenticated()
+            // Swagger routes are only public while springdoc serves them (disabled in prod)
+            if (apiDocsEnabled) {
+                auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
+            }
+            auth.anyRequest().authenticated()
         }
         .sessionManagement { session ->
             session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
