@@ -1,6 +1,7 @@
 package com.example.donations.user
 
 import com.example.donations.infrastructure.config.PasswordChangeRequiredFilter
+import com.example.donations.infrastructure.session.UserSessionTracker
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
@@ -25,6 +26,7 @@ class AuthController(
     private val authenticationManager: AuthenticationManager,
     private val loginAttemptService: LoginAttemptService,
     private val userRepository: UserRepository,
+    private val userSessionTracker: UserSessionTracker,
 ) {
 
     private val log = LoggerFactory.getLogger(AuthController::class.java)
@@ -65,6 +67,7 @@ class AuthController(
             .map { it.removePrefix("ROLE_") }
         val mustChangePassword = userRepository.findByUsername(request.username)?.mustChangePassword ?: false
         session.setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, mustChangePassword)
+        userSessionTracker.register(request.username, session)
         return ResponseEntity.ok(
             LoginResponse(username = request.username, roles = roles, mustChangePassword = mustChangePassword)
         )
