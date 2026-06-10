@@ -33,14 +33,7 @@ class UserManagementTest {
 
     @BeforeEach
     fun setUp() {
-        val result = mockMvc.perform(
-            post("/api/v1/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"username":"admin","password":"admin"}""")
-        ).andReturn()
-
-        adminSession = result.request.getSession(false) as? MockHttpSession
-            ?: throw AssertionError("No session created after admin login")
+        adminSession = TestAuth.loginAsAdmin(mockMvc)
     }
 
     private fun createUser(
@@ -177,6 +170,22 @@ class UserManagementTest {
     }
 
     // --- Update user ---
+
+    @Test
+    @DisplayName("Update user with blank username returns 400 with field error")
+    fun updateUserWithBlankUsernameReturns400() {
+        val createResult = createUser("blankrename")
+        val userId = extractId(createResult.response.contentAsString)
+
+        mockMvc.perform(
+            put("/api/v1/users/$userId")
+                .session(adminSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"   "}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.fields.username").exists())
+    }
 
     @Test
     @DisplayName("Admin updates user roles returns 200 with changed roles")

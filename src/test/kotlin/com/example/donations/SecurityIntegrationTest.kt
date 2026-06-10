@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @SpringBootTest
@@ -39,10 +40,7 @@ class SecurityIntegrationTest {
             ?: throw AssertionError("No session created after login")
     }
 
-    private fun loginAsAdmin(): MockHttpSession {
-        val result = login("admin", "admin")
-        return extractSession(result)
-    }
+    private fun loginAsAdmin(): MockHttpSession = TestAuth.loginAsAdmin(mockMvc)
 
     private fun createUser(session: MockHttpSession, username: String, password: String, role: String): MvcResult {
         return mockMvc.perform(
@@ -87,6 +85,168 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    @DisplayName("Login rotates session ID and invalidates pre-auth session")
+    fun loginRotatesSessionId() {
+        val preAuthSession = MockHttpSession()
+
+        val result = mockMvc.perform(
+            post("/api/v1/login")
+                .session(preAuthSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"admin","password":"admin"}""")
+        )
+            .andExpect(status().isOk)
+            .andReturn()
+
+        val postAuthSession = result.request.getSession(false)
+            ?: throw AssertionError("No session after login")
+
+        assert(postAuthSession.id != preAuthSession.id) {
+            "Session ID must change on login (fixation protection)"
+        }
+        assert(preAuthSession.isInvalid) { "Pre-auth session must be invalidated on login" }
+    }
+
+    @Test
+    @DisplayName("Five failed logins lock the account even for the correct password")
+    fun fiveFailedLoginsLockAccount() {
+        repeat(5) {
+            mockMvc.perform(
+                post("/api/v1/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"username":"admin","password":"wrongpassword"}""")
+            ).andExpect(status().isUnauthorized)
+        }
+
+        mockMvc.perform(
+            post("/api/v1/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"admin","password":"admin"}""")
+        ).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    @DisplayName("Successful login resets the failure counter")
+    fun successfulLoginResetsFailureCounter() {
+        repeat(4) {
+            mockMvc.perform(
+                post("/api/v1/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"username":"admin","password":"wrongpassword"}""")
+            ).andExpect(status().isUnauthorized)
+        }
+
+        login("admin", "admin").let { assert(it.response.status == 200) }
+
+        mockMvc.perform(
+            post("/api/v1/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"admin","password":"wrongpassword"}""")
+        ).andExpect(status().isUnauthorized)
+
+        login("admin", "admin").let { assert(it.response.status == 200) }
+    }
+
+    @Test
+    @DisplayName("Seeded admin must change password on first login")
+    fun seededAdminMustChangePassword() {
+        mockMvc.perform(
+            post("/api/v1/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"admin","password":"admin"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.mustChangePassword").value(true))
+    }
+
+    @Test
+    @DisplayName("Admin-created user must change password; self-service change clears the flag")
+    fun adminProvisionedPasswordIsProvisional() {
+        val adminSession = loginAsAdmin()
+        createUser(adminSession, "newuser1", "provisional1", "OPERATOR")
+
+        mockMvc.perform(
+            post("/api/v1/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"newuser1","password":"provisional1"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.mustChangePassword").value(true))
+
+        val userSession = extractSession(login("newuser1", "provisional1"))
+        mockMvc.perform(
+            put("/api/v1/users/me/password")
+                .session(userSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"currentPassword":"provisional1","newPassword":"ownpassword1"}""")
+        ).andExpect(status().isNoContent)
+
+        mockMvc.perform(
+            post("/api/v1/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"newuser1","password":"ownpassword1"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.mustChangePassword").value(false))
+    }
+
+    @Test
+    @DisplayName("Admin password reset flags the target user for password change")
+    fun adminPasswordResetFlagsUser() {
+        val adminSession = loginAsAdmin()
+        val createResult = createUser(adminSession, "resetme", "initialpass1", "OPERATOR")
+        val userId = extractId(createResult.response.contentAsString)
+
+        val userSession = extractSession(login("resetme", "initialpass1"))
+        mockMvc.perform(
+            put("/api/v1/users/me/password")
+                .session(userSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"currentPassword":"initialpass1","newPassword":"ownpassword1"}""")
+        ).andExpect(status().isNoContent)
+
+        mockMvc.perform(
+            put("/api/v1/users/$userId")
+                .session(adminSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"password":"adminreset1"}""")
+        ).andExpect(status().isOk)
+
+        mockMvc.perform(
+            post("/api/v1/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"resetme","password":"adminreset1"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.mustChangePassword").value(true))
+    }
+
+    @Test
+    @DisplayName("Flagged user is blocked from business endpoints until password change")
+    fun flaggedUserBlockedUntilPasswordChange() {
+        val session = extractSession(login("admin", "admin"))
+
+        mockMvc.perform(
+            get("/api/v1/users")
+                .session(session)
+        )
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
+
+        mockMvc.perform(
+            put("/api/v1/users/me/password")
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"currentPassword":"admin","newPassword":"rotated-pass-1"}""")
+        ).andExpect(status().isNoContent)
+
+        mockMvc.perform(
+            get("/api/v1/users")
+                .session(session)
+        ).andExpect(status().isOk)
+    }
+
+    @Test
     @DisplayName("Logout invalidates session")
     fun logoutInvalidatesSession() {
         val session = loginAsAdmin()
@@ -114,8 +274,7 @@ class SecurityIntegrationTest {
 
         createUser(adminSession, "operator1", "password123", "OPERATOR")
 
-        val operatorResult = login("operator1", "password123")
-        val operatorSession = extractSession(operatorResult)
+        val operatorSession = TestAuth.loginActivated(mockMvc, "operator1", "password123")
 
         mockMvc.perform(
             get("/api/v1/users")

@@ -70,13 +70,11 @@ class DonorManagementTest {
 
     @BeforeEach
     fun setUp() {
-        val adminLoginResult = login("admin", "admin")
-        adminSession = extractSession(adminLoginResult)
+        adminSession = TestAuth.loginAsAdmin(mockMvc)
 
         createUser(adminSession, "operator", "password123", "OPERATOR")
 
-        val operatorLoginResult = login("operator", "password123")
-        operatorSession = extractSession(operatorLoginResult)
+        operatorSession = TestAuth.loginActivated(mockMvc, "operator", "password123")
     }
 
     // --- CRUD tests (as OPERATOR) ---
@@ -297,8 +295,7 @@ class DonorManagementTest {
     @DisplayName("Treasurer accessing donor endpoints returns 200")
     fun treasurerAccessingDonorEndpointsReturns200() {
         createUser(adminSession, "treasurer", "password123", "TREASURER")
-        val treasurerResult = login("treasurer", "password123")
-        val treasurerSession = extractSession(treasurerResult)
+        val treasurerSession = TestAuth.loginActivated(mockMvc, "treasurer", "password123")
 
         mockMvc.perform(
             get("/api/v1/donors")

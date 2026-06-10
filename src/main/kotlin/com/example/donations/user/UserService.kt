@@ -30,6 +30,8 @@ class UserService(
             username = request.username,
             password = passwordEncoder.encode(request.password)!!,
             active = request.active,
+            // Admin-provisioned passwords are provisional until the user sets their own
+            mustChangePassword = true,
             roles = request.roles,
         )
         return userRepository.save(user)
@@ -48,6 +50,7 @@ class UserService(
 
         request.password?.let { newPassword ->
             user.password = passwordEncoder.encode(newPassword)!!
+            user.mustChangePassword = true
         }
 
         request.roles?.let { newRoles ->
@@ -71,6 +74,7 @@ class UserService(
         }
 
         user.password = passwordEncoder.encode(newPassword)!!
+        user.mustChangePassword = false
         userRepository.save(user)
     }
 }

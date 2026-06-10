@@ -24,6 +24,9 @@ open class User(
     @Column(name = "active", nullable = false)
     open var active: Boolean = true,
 
+    @Column(name = "must_change_password", nullable = false)
+    open var mustChangePassword: Boolean = false,
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = [JoinColumn(name = "user_id")])
     @Column(name = "role")

@@ -1,12 +1,15 @@
 package com.example.donations.user
 
+import com.example.donations.infrastructure.config.PasswordChangeRequiredFilter
+import com.example.donations.infrastructure.session.UserSessionTracker
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/users")
 class UserController(
     private val userService: UserService,
+    private val userSessionTracker: UserSessionTracker,
 ) {
 
     @GetMapping
@@ -43,14 +47,27 @@ class UserController(
     fun updateUser(
         @PathVariable id: Long,
         @Valid @RequestBody request: UpdateUserRequest,
-    ): UserResponse = UserResponse.from(userService.updateUser(id, request))
+    ): UserResponse {
+        val user = userService.updateUser(id, request)
+        if (request.password != null) {
+            // Admin reset a password: revoke every live session of the target user
+            userSessionTracker.invalidateAll(user.username)
+        }
+        return UserResponse.from(user)
+    }
 
     @PutMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
-    fun changeOwnPassword(@Valid @RequestBody request: ChangePasswordRequest): ResponseEntity<Void> {
-        val username = SecurityContextHolder.getContext().authentication?.name
-            ?: throw IllegalStateException("No authenticated user")
+    fun changeOwnPassword(
+        @Valid @RequestBody request: ChangePasswordRequest,
+        httpRequest: HttpServletRequest,
+        authentication: Authentication,
+    ): ResponseEntity<Void> {
+        val username = authentication.name
         userService.changeOwnPassword(username, request.currentPassword, request.newPassword)
+        val session = httpRequest.getSession(false)
+        session?.setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, false)
+        userSessionTracker.invalidateAll(username, exceptSessionId = session?.id)
         return ResponseEntity.noContent().build()
     }
 }
