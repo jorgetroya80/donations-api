@@ -33,14 +33,7 @@ class UserManagementTest {
 
     @BeforeEach
     fun setUp() {
-        val result = mockMvc.perform(
-            post("/api/v1/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"username":"admin","password":"admin"}""")
-        ).andReturn()
-
-        adminSession = result.request.getSession(false) as? MockHttpSession
-            ?: throw AssertionError("No session created after admin login")
+        adminSession = TestAuth.loginAsAdmin(mockMvc)
     }
 
     private fun createUser(

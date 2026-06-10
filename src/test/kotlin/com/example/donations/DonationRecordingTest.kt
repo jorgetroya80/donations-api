@@ -34,8 +34,7 @@ class DonationRecordingTest {
 
     @BeforeEach
     fun setUp() {
-        val adminResult = login("admin", "admin")
-        adminSession = extractSession(adminResult)
+        adminSession = TestAuth.loginAsAdmin(mockMvc)
 
         mockMvc.perform(
             post("/api/v1/users")
@@ -44,8 +43,7 @@ class DonationRecordingTest {
                 .content("""{"username":"operator1","password":"password123","roles":["OPERATOR"]}""")
         ).andExpect(status().isCreated)
 
-        val operatorResult = login("operator1", "password123")
-        operatorSession = extractSession(operatorResult)
+        operatorSession = TestAuth.loginActivated(mockMvc, "operator1", "password123")
 
         donorId = createDonor(operatorSession, "Juan Garcia", "12345678Z")
     }
@@ -310,8 +308,7 @@ class DonationRecordingTest {
                 .content("""{"username":"treasurer1","password":"password123","roles":["TREASURER"]}""")
         ).andExpect(status().isCreated)
 
-        val treasurerResult = login("treasurer1", "password123")
-        val treasurerSession = extractSession(treasurerResult)
+        val treasurerSession = TestAuth.loginActivated(mockMvc, "treasurer1", "password123")
 
         mockMvc.perform(
             get("/api/v1/donations")
