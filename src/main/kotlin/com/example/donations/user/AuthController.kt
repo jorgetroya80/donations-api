@@ -1,9 +1,12 @@
 package com.example.donations.user
 
 import jakarta.servlet.http.HttpServletRequest
+import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.LockedException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.AuthenticationException
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.web.bind.annotation.PostMapping
@@ -19,13 +22,28 @@ data class LoginResponse(val username: String, val roles: List<String>)
 @RequestMapping("/api/v1")
 class AuthController(
     private val authenticationManager: AuthenticationManager,
+    private val loginAttemptService: LoginAttemptService,
 ) {
+
+    private val log = LoggerFactory.getLogger(AuthController::class.java)
 
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest, httpRequest: HttpServletRequest): ResponseEntity<LoginResponse> {
-        val authentication = authenticationManager.authenticate(
-            UsernamePasswordAuthenticationToken(request.username, request.password)
-        )
+        if (loginAttemptService.isLocked(request.username)) {
+            log.warn("Rejected login for locked account '{}' from {}", request.username, httpRequest.remoteAddr)
+            throw LockedException("Account temporarily locked")
+        }
+
+        val authentication = try {
+            authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken(request.username, request.password)
+            )
+        } catch (ex: AuthenticationException) {
+            loginAttemptService.recordFailure(request.username)
+            log.warn("Failed login for '{}' from {}", request.username, httpRequest.remoteAddr)
+            throw ex
+        }
+        loginAttemptService.recordSuccess(request.username)
         val context = SecurityContextHolder.createEmptyContext()
         context.authentication = authentication
         SecurityContextHolder.setContext(context)
