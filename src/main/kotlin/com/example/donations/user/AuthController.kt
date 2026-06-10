@@ -1,5 +1,6 @@
 package com.example.donations.user
 
+import com.example.donations.infrastructure.config.PasswordChangeRequiredFilter
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
@@ -63,6 +64,7 @@ class AuthController(
             .filter { it.startsWith("ROLE_") }
             .map { it.removePrefix("ROLE_") }
         val mustChangePassword = userRepository.findByUsername(request.username)?.mustChangePassword ?: false
+        session.setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, mustChangePassword)
         return ResponseEntity.ok(
             LoginResponse(username = request.username, roles = roles, mustChangePassword = mustChangePassword)
         )

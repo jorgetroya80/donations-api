@@ -1,5 +1,7 @@
 package com.example.donations.user
 
+import com.example.donations.infrastructure.config.PasswordChangeRequiredFilter
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -47,10 +49,14 @@ class UserController(
 
     @PutMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
-    fun changeOwnPassword(@Valid @RequestBody request: ChangePasswordRequest): ResponseEntity<Void> {
+    fun changeOwnPassword(
+        @Valid @RequestBody request: ChangePasswordRequest,
+        httpRequest: HttpServletRequest,
+    ): ResponseEntity<Void> {
         val username = SecurityContextHolder.getContext().authentication?.name
             ?: throw IllegalStateException("No authenticated user")
         userService.changeOwnPassword(username, request.currentPassword, request.newPassword)
+        httpRequest.getSession(false)?.setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, false)
         return ResponseEntity.noContent().build()
     }
 }

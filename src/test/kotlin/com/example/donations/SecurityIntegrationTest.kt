@@ -40,10 +40,7 @@ class SecurityIntegrationTest {
             ?: throw AssertionError("No session created after login")
     }
 
-    private fun loginAsAdmin(): MockHttpSession {
-        val result = login("admin", "admin")
-        return extractSession(result)
-    }
+    private fun loginAsAdmin(): MockHttpSession = TestAuth.loginAsAdmin(mockMvc)
 
     private fun createUser(session: MockHttpSession, username: String, password: String, role: String): MvcResult {
         return mockMvc.perform(
@@ -225,6 +222,31 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    @DisplayName("Flagged user is blocked from business endpoints until password change")
+    fun flaggedUserBlockedUntilPasswordChange() {
+        val session = extractSession(login("admin", "admin"))
+
+        mockMvc.perform(
+            get("/api/v1/users")
+                .session(session)
+        )
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
+
+        mockMvc.perform(
+            put("/api/v1/users/me/password")
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"currentPassword":"admin","newPassword":"rotated-pass-1"}""")
+        ).andExpect(status().isNoContent)
+
+        mockMvc.perform(
+            get("/api/v1/users")
+                .session(session)
+        ).andExpect(status().isOk)
+    }
+
+    @Test
     @DisplayName("Logout invalidates session")
     fun logoutInvalidatesSession() {
         val session = loginAsAdmin()
@@ -252,8 +274,7 @@ class SecurityIntegrationTest {
 
         createUser(adminSession, "operator1", "password123", "OPERATOR")
 
-        val operatorResult = login("operator1", "password123")
-        val operatorSession = extractSession(operatorResult)
+        val operatorSession = TestAuth.loginActivated(mockMvc, "operator1", "password123")
 
         mockMvc.perform(
             get("/api/v1/users")
