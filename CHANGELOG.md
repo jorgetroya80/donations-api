@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/jorgetroya80/donations-api/compare/v1.7.0...v1.7.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* Security hardening - 8 findings from auth/session review ([#31](https://github.com/jorgetroya80/donations-api/issues/31)) ([f52496e](https://github.com/jorgetroya80/donations-api/commit/f52496e4f13b853eeaad6ccb76870d2c2fbb6732))
+
 ## [1.7.0](https://github.com/jorgetroya80/donations-api/compare/v1.6.0...v1.7.0) (2026-05-25)
 
 
