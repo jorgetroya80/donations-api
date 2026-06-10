@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -61,9 +61,9 @@ class UserController(
     fun changeOwnPassword(
         @Valid @RequestBody request: ChangePasswordRequest,
         httpRequest: HttpServletRequest,
+        authentication: Authentication,
     ): ResponseEntity<Void> {
-        val username = SecurityContextHolder.getContext().authentication?.name
-            ?: throw IllegalStateException("No authenticated user")
+        val username = authentication.name
         userService.changeOwnPassword(username, request.currentPassword, request.newPassword)
         val session = httpRequest.getSession(false)
         session?.setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, false)
