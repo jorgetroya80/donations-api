@@ -18,6 +18,11 @@ spring:
     default-property-inclusion: non_null
 server:
   port: 8081
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
 app:
   cors:
     enabled: false
@@ -37,6 +42,11 @@ spring:
   config:
     activate:
       on-profile: prod
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
 springdoc:
   api-docs:
     enabled: false

@@ -41,7 +41,7 @@ class SecurityConfig {
                 .anyRequest().authenticated()
         }
         .sessionManagement { session ->
-            session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
+            session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
         }
         .formLogin { it.disable() }
         .httpBasic { it.disable() }
