@@ -16,13 +16,14 @@ import org.springframework.web.bind.annotation.RestController
 
 data class LoginRequest(val username: String, val password: String)
 
-data class LoginResponse(val username: String, val roles: List<String>)
+data class LoginResponse(val username: String, val roles: List<String>, val mustChangePassword: Boolean)
 
 @RestController
 @RequestMapping("/api/v1")
 class AuthController(
     private val authenticationManager: AuthenticationManager,
     private val loginAttemptService: LoginAttemptService,
+    private val userRepository: UserRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(AuthController::class.java)
@@ -61,6 +62,9 @@ class AuthController(
             .mapNotNull { it.authority }
             .filter { it.startsWith("ROLE_") }
             .map { it.removePrefix("ROLE_") }
-        return ResponseEntity.ok(LoginResponse(username = request.username, roles = roles))
+        val mustChangePassword = userRepository.findByUsername(request.username)?.mustChangePassword ?: false
+        return ResponseEntity.ok(
+            LoginResponse(username = request.username, roles = roles, mustChangePassword = mustChangePassword)
+        )
     }
 }

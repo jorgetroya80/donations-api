@@ -44,6 +44,7 @@ data class UserResponse(
     val username: String,
     val roles: List<String>,
     val active: Boolean,
+    val mustChangePassword: Boolean,
     val createdAt: Instant?,
     val updatedAt: Instant?,
 ) {
@@ -53,6 +54,7 @@ data class UserResponse(
             username = user.username,
             roles = user.roles.map { it.name },
             active = user.active,
+            mustChangePassword = user.mustChangePassword,
             createdAt = user.createdAt,
             updatedAt = user.updatedAt,
         )
