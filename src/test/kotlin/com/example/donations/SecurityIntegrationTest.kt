@@ -87,6 +87,29 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    @DisplayName("Login rotates session ID and invalidates pre-auth session")
+    fun loginRotatesSessionId() {
+        val preAuthSession = MockHttpSession()
+
+        val result = mockMvc.perform(
+            post("/api/v1/login")
+                .session(preAuthSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"admin","password":"admin"}""")
+        )
+            .andExpect(status().isOk)
+            .andReturn()
+
+        val postAuthSession = result.request.getSession(false)
+            ?: throw AssertionError("No session after login")
+
+        assert(postAuthSession.id != preAuthSession.id) {
+            "Session ID must change on login (fixation protection)"
+        }
+        assert(preAuthSession.isInvalid) { "Pre-auth session must be invalidated on login" }
+    }
+
+    @Test
     @DisplayName("Logout invalidates session")
     fun logoutInvalidatesSession() {
         val session = loginAsAdmin()

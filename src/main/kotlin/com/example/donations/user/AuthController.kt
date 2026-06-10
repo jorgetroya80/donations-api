@@ -30,6 +30,9 @@ class AuthController(
         context.authentication = authentication
         SecurityContextHolder.setContext(context)
 
+        // Rotate session ID on login to prevent session fixation: manual
+        // authentication bypasses Spring Security's built-in protection.
+        httpRequest.getSession(false)?.invalidate()
         val session = httpRequest.getSession(true)
         session.setAttribute(
             HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
