@@ -1,5 +1,7 @@
 # Implementation Plan: Security Hardening — Donations API v1
 
+**Status:** Implemented (2026-06-10). All 8 findings fixed; spec at [docs/specs/security-hardening.md](../docs/security-hardening.md). Deviation: Task 6 used a custom `UserSessionTracker` instead of Spring Security `SessionRegistry` (registry is not populated by manual controller authentication).
+
 ## Overview
 
 Security review found 4 HIGH and 4 MEDIUM issues in the auth/session layer. This plan fixes findings 1–8: CSRF exposure (via cookie hardening), session fixation, default `admin/admin` credentials (forced password change on first login), login brute-forcing, session cookie flags, eager session creation, stale sessions after password change, and Postgres LAN exposure. Lows (#9 blank username on update, #10 swagger `permitAll` relies on prod profile) are follow-ups, out of scope.

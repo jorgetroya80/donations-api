@@ -1,6 +1,6 @@
 # Software Architecture — Donations API v1
 
-**Version:** 1.2.0 | **Stack:** Kotlin 2.2 · Spring Boot 4.0.5 · PostgreSQL 18.3
+**Version:** 1.3.0 | **Stack:** Kotlin 2.2 · Spring Boot 4.0.5 · PostgreSQL 18.3
 
 ---
 
@@ -200,6 +200,7 @@ classDiagram
         +username: String
         +password: String
         +active: Boolean
+        +mustChangePassword: Boolean
         +roles: Set~Role~
     }
 
@@ -289,6 +290,7 @@ erDiagram
         varchar username UK
         varchar password
         boolean active
+        boolean must_change_password
         varchar created_by
         timestamp created_at
         varchar updated_by
@@ -360,12 +362,13 @@ erDiagram
 ### Flyway Migrations
 
 ```
-V1__create_schema_baseline.sql   → empty baseline
-V2__create_users_and_roles.sql   → users + user_roles tables
-V3__seed_admin_user.sql          → default admin user (BCrypt)
-V4__create_donors.sql            → donors table
-V5__create_donations.sql         → donations table + indexes
-V6__create_expenses.sql          → expenses table + index
+V1__create_schema_baseline.sql      → empty baseline
+V2__create_users_and_roles.sql      → users + user_roles tables
+V3__seed_admin_user.sql             → default admin user (BCrypt)
+V4__create_donors.sql               → donors table
+V5__create_donations.sql            → donations table + indexes
+V6__create_expenses.sql             → expenses table + index
+V7__add_must_change_password.sql    → forced rotation flag (flags still-default admin)
 ```
 
 ---
@@ -505,6 +508,19 @@ sequenceDiagram
     SS-->>AC: Retrieve SecurityContext → validate role
 ```
 
+### Session and Credential Hardening
+
+| Control | Implementation |
+|---------|---------------|
+| Session cookie | `HttpOnly` + `SameSite=Lax` (CSRF mitigation; frontend is same-origin); `Secure` in `prod` profile |
+| Session creation | `IF_REQUIRED` — anonymous requests get no session |
+| Session fixation | `AuthController` invalidates any pre-auth session and issues a fresh ID on login |
+| Brute force | `LoginAttemptService`: 5 consecutive failures → 15-min lock (in-memory, single-instance); failures/lockouts logged with remote IP; generic 401 avoids account enumeration |
+| Default credentials | `must_change_password` flag (V7). `PasswordChangeRequiredFilter` returns 403 `{"code":"PASSWORD_CHANGE_REQUIRED"}` for flagged sessions everywhere except `PUT /api/v1/users/me/password` and `POST /api/v1/logout`. Admin-provisioned passwords (create user, admin reset) are always provisional; `LoginResponse.mustChangePassword` lets the frontend redirect |
+| Session revocation | `UserSessionTracker`: self-service password change revokes the user's other sessions; admin password reset revokes all of the target's sessions |
+
+Details and decisions: [docs/specs/security-hardening.md](security-hardening.md)
+
 ---
 
 ## 8. Interaction Flows (Sequence)
@@ -612,6 +628,7 @@ com.donations/
 │   ├── UserController.kt               REST Controller
 │   ├── UserDtos.kt                     Request / Response DTOs
 │   ├── AuthController.kt               Login endpoint
+│   ├── LoginAttemptService.kt          Brute-force lockout
 │   └── AppUserDetailsService.kt        Spring Security bridge
 │
 ├── donor/                               ← Domain: Donors
@@ -649,7 +666,10 @@ com.donations/
 └── infrastructure/
     ├── config/
     │   ├── SecurityConfig.kt           Auth, CORS, sessions, BCrypt
+    │   ├── PasswordChangeRequiredFilter.kt  Forced password rotation
     │   └── OpenApiConfig.kt            Swagger / OpenAPI 3
+    ├── session/
+    │   └── UserSessionTracker.kt       Session revocation on password change
     ├── audit/
     │   ├── AuditableEntity.kt          Base entity (id + audit fields)
     │   └── AuditorAwareConfig.kt       Reads SecurityContext → createdBy
@@ -666,7 +686,8 @@ src/main/resources/
     ├── V3__seed_admin_user.sql
     ├── V4__create_donors.sql
     ├── V5__create_donations.sql
-    └── V6__create_expenses.sql
+    ├── V6__create_expenses.sql
+    └── V7__add_must_change_password.sql
 ```
 
 ---
