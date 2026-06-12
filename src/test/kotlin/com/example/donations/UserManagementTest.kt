@@ -138,9 +138,9 @@ class UserManagementTest {
             .andExpect(jsonPath("$.content.length()").value(greaterThanOrEqualTo(1)))
             .andExpect(jsonPath("$.content[0].username").exists())
             .andExpect(jsonPath("$.content[0].password").doesNotExist())
-            .andExpect(jsonPath("$.totalElements").exists())
-            .andExpect(jsonPath("$.number").exists())
-            .andExpect(jsonPath("$.size").exists())
+            .andExpect(jsonPath("$.page.totalElements").exists())
+            .andExpect(jsonPath("$.page.number").exists())
+            .andExpect(jsonPath("$.page.size").exists())
     }
 
     // --- Get user by ID ---
