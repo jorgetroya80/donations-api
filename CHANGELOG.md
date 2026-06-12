@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/jorgetroya80/donations-api/compare/v1.7.1...v1.8.0) (2026-06-12)
+
+
+### Features
+
+* stable page serialization via PagedModel (VIA_DTO) ([#33](https://github.com/jorgetroya80/donations-api/issues/33)) ([ba2b3b2](https://github.com/jorgetroya80/donations-api/commit/ba2b3b228bfc9e678ec9447c078613ed0f558897))
+
 ## [1.7.1](https://github.com/jorgetroya80/donations-api/compare/v1.7.0...v1.7.1) (2026-06-10)
 
 
