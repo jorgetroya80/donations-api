@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/jorgetroya80/donations-api/compare/v1.8.0...v1.9.0) (2026-06-16)
+
+
+### Features
+
+* add test data seed script ([#35](https://github.com/jorgetroya80/donations-api/issues/35)) ([10c0197](https://github.com/jorgetroya80/donations-api/commit/10c019778e42b13fa2ecf0ccd531ae932f0b8235))
+
 ## [1.8.0](https://github.com/jorgetroya80/donations-api/compare/v1.7.1...v1.8.0) (2026-06-12)
 
 
