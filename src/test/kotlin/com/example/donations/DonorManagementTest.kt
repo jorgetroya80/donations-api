@@ -269,6 +269,56 @@ class DonorManagementTest {
     }
 
     @Test
+    @DisplayName("Search treats LIKE wildcard % as a literal, not match-all")
+    fun searchTreatsPercentAsLiteral() {
+        createDonor(operatorSession, "Juan Garcia", "12345678Z")
+        createDonor(operatorSession, "Maria Lopez", "X1234567L")
+
+        // No donor contains a literal '%', so an escaped '%' must match nothing.
+        mockMvc.perform(
+            get("/api/v1/donors")
+                .session(operatorSession)
+                .param("search", "%")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.page.totalElements").value(0))
+    }
+
+    @Test
+    @DisplayName("Search treats LIKE wildcard _ as a literal, not single-char match")
+    fun searchTreatsUnderscoreAsLiteral() {
+        createDonor(operatorSession, "Juan Garcia", "12345678Z")
+        createDonor(operatorSession, "Maria Lopez", "X1234567L")
+
+        // No donor contains a literal '_', so an escaped '_' must match nothing.
+        mockMvc.perform(
+            get("/api/v1/donors")
+                .session(operatorSession)
+                .param("search", "_")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.page.totalElements").value(0))
+    }
+
+    @Test
+    @DisplayName("Search matches a literal % and does not over-match via wildcard")
+    fun searchMatchesLiteralPercentOnly() {
+        createDonor(operatorSession, "Ann%Lee", "12345678Z")
+        createDonor(operatorSession, "AnnaLee", "X1234567L")
+
+        // Escaped, "Ann%Lee" matches only the literal name; unescaped it would also
+        // match "AnnaLee" (% acting as wildcard), so this proves the escaping holds.
+        mockMvc.perform(
+            get("/api/v1/donors")
+                .session(operatorSession)
+                .param("search", "Ann%Lee")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.page.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].fullName").value("Ann%Lee"))
+    }
+
+    @Test
     @DisplayName("Get donor by ID returns 200")
     fun getDonorByIdReturns200() {
         val createResult = createDonor(operatorSession, "Juan Garcia", "12345678Z")

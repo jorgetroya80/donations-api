@@ -11,8 +11,8 @@ interface DonorRepository : JpaRepository<Donor, Long> {
 
     @Query(
         "SELECT d FROM Donor d " +
-            "WHERE LOWER(d.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +
-            "OR LOWER(d.nationalId) LIKE LOWER(CONCAT('%', :search, '%'))"
+            "WHERE LOWER(d.fullName) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '\\' " +
+            "OR LOWER(d.nationalId) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '\\'"
     )
     fun search(search: String, pageable: Pageable): Page<Donor>
 }
