@@ -231,15 +231,18 @@ class DonorManagementTest {
     }
 
     @Test
-    @DisplayName("Search combines with paging and sort")
+    @DisplayName("Search filters before paging and sort")
     fun searchCombinesWithPagingAndSort() {
         createDonor(operatorSession, "Juan Garcia", "12345678Z")
         createDonor(operatorSession, "Maria Lopez", "X1234567L")
+        createDonor(operatorSession, "Pedro Ruiz", "11111111H")
 
+        // "o" matches Maria Lopez and Pedro Ruiz but NOT Juan Garcia,
+        // so the filtered set (2) is smaller than the full set (3).
         mockMvc.perform(
             get("/api/v1/donors")
                 .session(operatorSession)
-                .param("search", "a")
+                .param("search", "o")
                 .param("size", "1")
                 .param("sort", "fullName,asc")
         )
@@ -247,7 +250,7 @@ class DonorManagementTest {
             .andExpect(jsonPath("$.page.totalElements").value(2))
             .andExpect(jsonPath("$.page.totalPages").value(2))
             .andExpect(jsonPath("$.content.length()").value(1))
-            .andExpect(jsonPath("$.content[0].fullName").value("Juan Garcia"))
+            .andExpect(jsonPath("$.content[0].fullName").value("Maria Lopez"))
     }
 
     @Test
