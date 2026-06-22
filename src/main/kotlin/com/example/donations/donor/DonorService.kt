@@ -12,8 +12,11 @@ class DonorService(
 ) {
 
     @Transactional(readOnly = true)
-    fun listDonors(pageable: Pageable): Page<Donor> =
-        donorRepository.findAll(pageable)
+    fun listDonors(search: String?, pageable: Pageable): Page<Donor> {
+        val term = search?.trim()
+        return if (term.isNullOrEmpty()) donorRepository.findAll(pageable)
+        else donorRepository.search(term, pageable)
+    }
 
     @Transactional(readOnly = true)
     fun getDonor(id: Long): Donor =

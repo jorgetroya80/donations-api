@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -22,8 +23,11 @@ class DonorController(
 ) {
 
     @GetMapping
-    fun listDonors(pageable: Pageable): Page<DonorResponse> =
-        donorService.listDonors(pageable).map { DonorResponse.from(it) }
+    fun listDonors(
+        @RequestParam(required = false) search: String?,
+        pageable: Pageable,
+    ): Page<DonorResponse> =
+        donorService.listDonors(search, pageable).map { DonorResponse.from(it) }
 
     @GetMapping("/{id}")
     fun getDonor(@PathVariable id: Long): DonorResponse =

@@ -187,6 +187,85 @@ class DonorManagementTest {
     }
 
     @Test
+    @DisplayName("Search donors by fullName substring is case-insensitive")
+    fun searchDonorsByFullNameSubstringIsCaseInsensitive() {
+        createDonor(operatorSession, "Juan Garcia", "12345678Z")
+        createDonor(operatorSession, "Maria Lopez", "X1234567L")
+
+        mockMvc.perform(
+            get("/api/v1/donors")
+                .session(operatorSession)
+                .param("search", "mar")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.page.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].fullName").value("Maria Lopez"))
+
+        mockMvc.perform(
+            get("/api/v1/donors")
+                .session(operatorSession)
+                .param("search", "MAR")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.page.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].fullName").value("Maria Lopez"))
+    }
+
+    @Test
+    @DisplayName("Search donors by nationalId substring returns matching donor")
+    fun searchDonorsByNationalIdSubstring() {
+        createDonor(operatorSession, "Juan Garcia", "12345678Z")
+        createDonor(operatorSession, "Maria Lopez", "X1234567L")
+
+        mockMvc.perform(
+            get("/api/v1/donors")
+                .session(operatorSession)
+                .param("search", "X12345")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.page.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].fullName").value("Maria Lopez"))
+    }
+
+    @Test
+    @DisplayName("Search combines with paging and sort")
+    fun searchCombinesWithPagingAndSort() {
+        createDonor(operatorSession, "Juan Garcia", "12345678Z")
+        createDonor(operatorSession, "Maria Lopez", "X1234567L")
+
+        mockMvc.perform(
+            get("/api/v1/donors")
+                .session(operatorSession)
+                .param("search", "a")
+                .param("size", "1")
+                .param("sort", "fullName,asc")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.page.totalElements").value(2))
+            .andExpect(jsonPath("$.page.totalPages").value(2))
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content[0].fullName").value("Juan Garcia"))
+    }
+
+    @Test
+    @DisplayName("Blank search returns unfiltered results")
+    fun blankSearchReturnsUnfilteredResults() {
+        createDonor(operatorSession, "Juan Garcia", "12345678Z")
+        createDonor(operatorSession, "Maria Lopez", "X1234567L")
+
+        mockMvc.perform(
+            get("/api/v1/donors")
+                .session(operatorSession)
+                .param("search", " ")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.page.totalElements").value(2))
+    }
+
+    @Test
     @DisplayName("Get donor by ID returns 200")
     fun getDonorByIdReturns200() {
         val createResult = createDonor(operatorSession, "Juan Garcia", "12345678Z")
