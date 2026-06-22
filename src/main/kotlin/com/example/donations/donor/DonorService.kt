@@ -12,8 +12,15 @@ class DonorService(
 ) {
 
     @Transactional(readOnly = true)
-    fun listDonors(pageable: Pageable): Page<Donor> =
-        donorRepository.findAll(pageable)
+    fun listDonors(search: String?, pageable: Pageable): Page<Donor> {
+        val term = search?.trim()
+        if (term.isNullOrEmpty()) return donorRepository.findAll(pageable)
+        return donorRepository.search(escapeLike(term), pageable)
+    }
+
+    // Escape LIKE metacharacters so they match literally; backslash first to avoid double-escaping.
+    private fun escapeLike(term: String): String =
+        term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     @Transactional(readOnly = true)
     fun getDonor(id: Long): Donor =
