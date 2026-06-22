@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/jorgetroya80/donations-api/compare/v1.9.0...v1.10.0) (2026-06-22)
+
+
+### Features
+
+* add search query param to GET /api/v1/donors ([#38](https://github.com/jorgetroya80/donations-api/issues/38)) ([7c63c87](https://github.com/jorgetroya80/donations-api/commit/7c63c871a1964491f0f848d2d92f53caf1c6b1bc))
+
 ## [1.9.0](https://github.com/jorgetroya80/donations-api/compare/v1.8.0...v1.9.0) (2026-06-16)
 
 
