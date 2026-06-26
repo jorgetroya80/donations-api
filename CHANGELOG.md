@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/jorgetroya80/donations-api/compare/v1.10.0...v1.10.1) (2026-06-26)
+
+
+### Performance Improvements
+
+* **db:** speed up donor search and user role loading ([#40](https://github.com/jorgetroya80/donations-api/issues/40)) ([ca26e1a](https://github.com/jorgetroya80/donations-api/commit/ca26e1a79be23924d16887d2bd145349ad0adc48))
+
 ## [1.10.0](https://github.com/jorgetroya80/donations-api/compare/v1.9.0...v1.10.0) (2026-06-22)
 
 
