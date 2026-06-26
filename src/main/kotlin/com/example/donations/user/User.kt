@@ -10,6 +10,7 @@ import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.Table
+import org.hibernate.annotations.BatchSize
 
 @Entity
 @Table(name = "users")
@@ -31,5 +32,6 @@ open class User(
     @CollectionTable(name = "user_roles", joinColumns = [JoinColumn(name = "user_id")])
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
+    @BatchSize(size = 100)
     open var roles: Set<Role> = emptySet(),
 ) : AuditableEntity()
