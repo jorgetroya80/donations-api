@@ -1,6 +1,6 @@
 # Software Architecture — Donations API v1
 
-**Version:** 1.3.0 | **Stack:** Kotlin 2.2 · Spring Boot 4.0.5 · PostgreSQL 18.3
+**Version:** 1.4.0 | **Stack:** Kotlin 2.2 · Spring Boot 4.0.5 · PostgreSQL 18.3
 
 ---
 
@@ -40,10 +40,17 @@ The application is a **REST API** for church financial management. It manages do
                        │ JDBC :5432
                        ▼
 ┌─────────────────────────────────────────────────────────┐
-│              PostgreSQL 18.3 (Docker)                   │
-│         Database: donations                             │
+│              PostgreSQL 18.3                            │
+│   dev: Docker container (db: donations)                 │
+│   prod: Neon managed Postgres (db: neondb)              │
 └─────────────────────────────────────────────────────────┘
 ```
+
+> **Deployment topologies.** *dev* runs the API and PostgreSQL as local Docker
+> containers. *prod* runs the API as a Docker web service on **Render** (`frankfurt`
+> region, dynamic `$PORT`, TLS terminated at Render's edge → `forward-headers-strategy:
+> framework`) against **Neon** managed Postgres (`eu-central-1`, JDBC over TLS
+> `sslmode=require`, `-pooler` PgBouncer endpoint). See `plans/deploy-render.md`.
 
 ---
 
@@ -85,12 +92,17 @@ graph TB
 ### Environment Variables (production)
 
 ```bash
-SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/donations
-SPRING_DATASOURCE_USERNAME=donations
+# Neon managed Postgres (pooler endpoint, TLS required)
+SPRING_DATASOURCE_URL=jdbc:postgresql://ep-xxx-pooler.<region>.aws.neon.tech/neondb?sslmode=require
+SPRING_DATASOURCE_USERNAME=neondb_owner
 SPRING_DATASOURCE_PASSWORD=***
-APP_CORS_ALLOWED_ORIGINS=https://my-frontend.com
-SPRING_PROFILES_ACTIVE=prod   # disables Swagger
+SPRING_PROFILES_ACTIVE=prod   # disables Swagger, marks cookie Secure
+# PORT is injected by Render; the app binds ${PORT:8081}
 ```
+
+> CORS stays **disabled** in prod: the frontend reaches the API through a same-origin
+> nginx `/api` proxy, so no `APP_CORS_ALLOWED_ORIGINS` is needed. Only set it if a
+> cross-origin frontend is introduced.
 
 ---
 
@@ -131,7 +143,7 @@ graph TB
     subgraph "Infrastructure"
         AUD[AuditorAwareConfig<br/>createdBy / updatedBy]
         OAP[OpenApiConfig<br/>Swagger]
-        FLY[Flyway<br/>V1–V6 migrations]
+        FLY[Flyway<br/>V1–V8 migrations]
     end
 
     subgraph "Database"
@@ -358,6 +370,8 @@ erDiagram
 | `donations` | `donation_date` | INDEX |
 | `donations` | `donor_id` | INDEX + FK → donors |
 | `user_roles` | `(user_id, role)` | PRIMARY KEY |
+| `donors` | `LOWER(full_name)` | GIN trigram (pg_trgm) |
+| `donors` | `LOWER(national_id)` | GIN trigram (pg_trgm) |
 
 ### Flyway Migrations
 
@@ -369,6 +383,7 @@ V4__create_donors.sql               → donors table
 V5__create_donations.sql            → donations table + indexes
 V6__create_expenses.sql             → expenses table + index
 V7__add_must_change_password.sql    → forced rotation flag (flags still-default admin)
+V8__add_donor_search_trgm_index.sql → pg_trgm + GIN indexes on donor name / national_id
 ```
 
 ---
@@ -687,7 +702,8 @@ src/main/resources/
     ├── V4__create_donors.sql
     ├── V5__create_donations.sql
     ├── V6__create_expenses.sql
-    └── V7__add_must_change_password.sql
+    ├── V7__add_must_change_password.sql
+    └── V8__add_donor_search_trgm_index.sql
 ```
 
 ---
@@ -701,6 +717,6 @@ src/main/resources/
 | Auditing | `AuditableEntity` + `AuditorAwareConfig` | Traceability of who created/modified each record |
 | Duplicates | Detection in `DonationService` + `confirmDuplicate` flag | Prevent double-entry errors without blocking the operator |
 | DNI/NIE validation | Custom validator (modulo 23) | Requirement of the Spanish church context |
-| Migrations | Flyway V1–V6 | Version-controlled schema, reproducible |
+| Migrations | Flyway V1–V8 | Version-controlled schema, reproducible |
 | Reports | `ReportService` with no own entity | Pure aggregations, no persisted state |
 | Profiles | `dev` (CORS + Swagger) / `prod` (no Swagger) | Swagger not exposed in production |
