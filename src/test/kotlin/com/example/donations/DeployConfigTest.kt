@@ -5,9 +5,13 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.web.server.autoconfigure.ServerProperties
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Import
 import org.springframework.core.env.Environment
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import kotlin.test.assertEquals
 
 /**
@@ -54,5 +58,27 @@ class DeployPortBindingTest {
     @DisplayName("server.port resolves from the PORT property")
     fun serverPortBindsFromPortVar() {
         assertEquals("12345", environment.getProperty("server.port"))
+    }
+}
+
+/**
+ * Render's health check hits /actuator/health/liveness. It must be reachable
+ * without auth and report only livenessState (not the DB), so a Neon cold start
+ * does not make the check 503 and bounce the service.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Import(TestcontainersConfiguration::class)
+@DisplayName("Liveness probe")
+class DeployLivenessTest {
+
+    @Autowired
+    private lateinit var mockMvc: MockMvc
+
+    @Test
+    @DisplayName("liveness probe is reachable anonymously and UP")
+    fun livenessReachableAnonymously() {
+        mockMvc.perform(get("/actuator/health/liveness"))
+            .andExpect(status().isOk)
     }
 }

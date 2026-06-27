@@ -50,7 +50,7 @@ services:
     dockerfilePath: ./Dockerfile
     plan: free
     region: frankfurt              # co-locate with Neon eu-central-1 (~100ms less/round-trip)
-    healthCheckPath: /actuator/health
+    healthCheckPath: /actuator/health/liveness   # livenessState only — not gated on DB
     autoDeploy: true
     envVars:
       - key: SPRING_PROFILES_ACTIVE
@@ -64,10 +64,32 @@ services:
 ```
 - `region: frankfurt` → Render free defaults to Oregon (US); without this every query
   crosses the Atlantic to Neon `eu-central-1`. Highest-impact fix from the review.
-- `healthCheckPath` → `/actuator/health` is already `permitAll` (`SecurityConfig.kt:37`),
-  actuator already on the classpath (`build.gradle:29`).
+- `healthCheckPath` → `/actuator/health/liveness` (see change #6 — `/actuator/health`
+  aggregates the DB indicator and 503s on a Neon cold start, which would bounce the
+  service; liveness reports only `livenessState`).
 - `sync: false` = the key exists but the value is NOT committed; set it in the dashboard.
 - `autoDeploy: true` = push to `main` redeploys.
+
+### 6. Liveness probe for the health check — `application.yaml` + `SecurityConfig.kt`
+Review finding: the default `/actuator/health` includes the `db` indicator → returns 503
+when Neon's serverless compute is suspended → Render restarts a healthy app. Use Spring's
+liveness probe instead (reports only `livenessState`, never the DB).
+- `application.yaml` (default doc): enable probes
+  ```yaml
+  management:
+    endpoint:
+      health:
+        probes:
+          enabled: true
+  ```
+- `SecurityConfig.kt:37`: the matcher is exact, so widen it to also permit the sub-path:
+  `.requestMatchers("/actuator/health", "/actuator/health/liveness").permitAll()`
+- Covered by `DeployLivenessTest` (anonymous `GET /actuator/health/liveness` → 200).
+
+### 7. Genericize the Neon host in the committed plan (security hygiene)
+The real Neon endpoint + username were committed in `plans/deploy-render.md`; replace with
+generic placeholders (`ep-xxx-pooler.<region>...`, `username`) to match the already-
+sanitized `docs/architecture.md`. No password was ever committed.
 
 ### 5. Update `docs/ARCHITECTURE.md` to reflect the latest changes
 The doc still describes a local Docker-only topology and a stale migration list. Update:
@@ -92,8 +114,8 @@ The doc still describes a local Docker-only topology and a stale migration list.
 1. **New → Blueprint** → connect the GitHub repo → Render detects `render.yaml`.
 2. After the service is created, in **Environment** fill the 3 `sync:false` secrets with
    the Neon values from your `.env`:
-   - `SPRING_DATASOURCE_URL` = `jdbc:postgresql://ep-raspy-paper-asfh0qb1-pooler.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require`
-   - `SPRING_DATASOURCE_USERNAME` = `neondb_owner`
+   - `SPRING_DATASOURCE_URL` = `jdbc:postgresql://server-url/db-name?sslmode=require` (your Neon pooler host)
+   - `SPRING_DATASOURCE_USERNAME` = `username`
    - `SPRING_DATASOURCE_PASSWORD` = (the password)
 3. Deploy. Render builds the Dockerfile and starts the app.
 
@@ -101,7 +123,7 @@ The doc still describes a local Docker-only topology and a stale migration list.
 
 - **Flyway over the `-pooler` host (PgBouncer, transaction-mode)**: Flyway uses
   session-level advisory locks for its migration lock; a transaction-mode pooler can fail
-  on the first deploy. Mitigation if the deploy hangs on migrations: point
+  on the first deploy. Mitigation if the deployment hangs on migrations: point
   `SPRING_DATASOURCE_URL` at Neon's **direct** host (no `-pooler`) just so V1–V8 run; the
   app can stay on the pooler. (Since you already applied V1–V8 when connecting locally,
   Flyway likely re-runs nothing and this risk won't materialize.)
