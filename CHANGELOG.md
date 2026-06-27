@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/jorgetroya80/donations-api/compare/v1.10.1...v1.11.0) (2026-06-27)
+
+
+### Features
+
+* deploy API to Render with Neon ([#42](https://github.com/jorgetroya80/donations-api/issues/42)) ([192c8b8](https://github.com/jorgetroya80/donations-api/commit/192c8b846fe20bf772dec3cbad60df539923b0fc))
+
 ## [1.10.1](https://github.com/jorgetroya80/donations-api/compare/v1.10.0...v1.10.1) (2026-06-26)
 
 
