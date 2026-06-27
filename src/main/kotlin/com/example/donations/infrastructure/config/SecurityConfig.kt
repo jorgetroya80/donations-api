@@ -34,7 +34,7 @@ class SecurityConfig(
         .authorizeHttpRequests { auth ->
             auth
                 .requestMatchers("/api/v1/login").permitAll()
-                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/health/liveness").permitAll()
             // Swagger routes are only public while springdoc serves them (disabled in prod)
             if (apiDocsEnabled) {
                 auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
