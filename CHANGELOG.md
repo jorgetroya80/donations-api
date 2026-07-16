@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/jorgetroya80/donations-api/compare/v1.11.0...v2.0.0) (2026-07-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* error responses are now RFC 9457 application/problem+json (message→detail, error→title, timestamp dropped)
+
+### Features
+
+* adopt RFC 9457 ProblemDetail errors and API consistency fixes ([#45](https://github.com/jorgetroya80/donations-api/issues/45)) ([b95737d](https://github.com/jorgetroya80/donations-api/commit/b95737d0f610d9263e1e8d067fe9cb7b3fa6da92))
+
 ## [1.11.0](https://github.com/jorgetroya80/donations-api/compare/v1.10.1...v1.11.0) (2026-06-27)
 
 
