@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -56,6 +57,11 @@ class SecurityIntegrationTest {
     fun unauthenticatedRequestReturns401() {
         mockMvc.perform(get("/api/v1/users"))
             .andExpect(status().isUnauthorized)
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.status").value(401))
+            .andExpect(jsonPath("$.title").value("Unauthorized"))
+            .andExpect(jsonPath("$.detail").value("Authentication required"))
+            .andExpect(jsonPath("$.instance").value("/api/v1/users"))
     }
 
     @Test
@@ -82,6 +88,25 @@ class SecurityIntegrationTest {
                 .content("""{"username":"admin","password":"wrongpassword"}""")
         )
             .andExpect(status().isUnauthorized)
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.status").value(401))
+            .andExpect(jsonPath("$.title").value("Unauthorized"))
+            .andExpect(jsonPath("$.detail").value("Authentication required"))
+    }
+
+    @Test
+    @DisplayName("Login with blank credentials returns 400 validation error, not 401")
+    fun loginWithBlankCredentialsReturns400() {
+        mockMvc.perform(
+            post("/api/v1/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"","password":""}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").value("Validation failed"))
+            .andExpect(jsonPath("$.fields.username").exists())
+            .andExpect(jsonPath("$.fields.password").exists())
     }
 
     @Test
@@ -231,6 +256,8 @@ class SecurityIntegrationTest {
                 .session(session)
         )
             .andExpect(status().isForbidden)
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").value("Password change required"))
             .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
 
         mockMvc.perform(
