@@ -1,13 +1,13 @@
 package com.example.donations.donation
 
 import com.example.donations.donor.DonorRepository
+import com.example.donations.infrastructure.defaultYearRange
 import com.example.donations.infrastructure.error.NotFoundException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.Year
 
 @Service
 @Transactional(readOnly = true)
@@ -17,8 +17,7 @@ class DonationService(
 ) {
 
     fun listDonations(pageable: Pageable, from: LocalDate?, to: LocalDate?): Page<Donation> {
-        val effectiveFrom = from ?: LocalDate.of(Year.now().value, 1, 1)
-        val effectiveTo = to ?: LocalDate.of(Year.now().value, 12, 31)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
         return donationRepository.findByDonationDateBetween(effectiveFrom, effectiveTo, pageable)
     }
 
