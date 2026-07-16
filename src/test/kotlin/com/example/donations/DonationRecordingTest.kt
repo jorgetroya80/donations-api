@@ -151,6 +151,27 @@ class DonationRecordingTest {
     }
 
     @Test
+    @DisplayName("List and get donation include donorName from the donor association")
+    fun donationResponsesIncludeDonorName() {
+        val donationId = createDonation(operatorSession, 100.00, "2026-01-15", "TITHE", "CASH", donorId)
+
+        mockMvc.perform(
+            get("/api/v1/donations")
+                .session(operatorSession)
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content[0].donorId").value(donorId))
+            .andExpect(jsonPath("$.content[0].donorName").value("Juan Garcia"))
+
+        mockMvc.perform(
+            get("/api/v1/donations/$donationId")
+                .session(operatorSession)
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.donorName").value("Juan Garcia"))
+    }
+
+    @Test
     @DisplayName("Get donation by ID returns 200")
     fun getDonationByIdReturns200() {
         val donationId = createDonation(operatorSession, 150.00, "2026-02-10", "TITHE", "CASH", donorId)
