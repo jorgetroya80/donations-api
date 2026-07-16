@@ -51,3 +51,4 @@ record — write a new ADR that supersedes it, and set the old one's status to
 | [001](ADR-001-session-based-authentication.md) | Session-based authentication over JWT | Accepted |
 | [002](ADR-002-deploy-render-neon.md) | Deploy on Render + Neon managed Postgres | Accepted |
 | [003](ADR-003-page-serialization-via-dto.md) | Page serialization via `VIA_DTO` | Accepted |
+| [004](ADR-004-problem-detail-errors.md) | RFC 9457 Problem Details for error responses | Accepted |

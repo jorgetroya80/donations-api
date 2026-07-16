@@ -5,12 +5,12 @@ import com.example.donations.donation.DonationType
 import com.example.donations.donor.DonorRepository
 import com.example.donations.expense.ExpenseCategory
 import com.example.donations.expense.ExpenseRepository
+import com.example.donations.infrastructure.defaultYearRange
 import com.example.donations.infrastructure.error.NotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.LocalDate
-import java.time.Year
 
 @Service
 @Transactional(readOnly = true)
@@ -21,8 +21,7 @@ class ReportService(
 ) {
 
     fun donationSummary(from: LocalDate?, to: LocalDate?): DonationSummaryResponse {
-        val effectiveFrom = from ?: LocalDate.of(Year.now().value, 1, 1)
-        val effectiveTo = to ?: LocalDate.of(Year.now().value, 12, 31)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
 
         val rows = donationRepository.sumByTypeAndDateBetween(effectiveFrom, effectiveTo)
         val totalsByType = rows.map { row ->
@@ -42,8 +41,7 @@ class ReportService(
     }
 
     fun expenseSummary(from: LocalDate?, to: LocalDate?): ExpenseSummaryResponse {
-        val effectiveFrom = from ?: LocalDate.of(Year.now().value, 1, 1)
-        val effectiveTo = to ?: LocalDate.of(Year.now().value, 12, 31)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
 
         val rows = expenseRepository.sumByCategoryAndDateBetween(effectiveFrom, effectiveTo)
         val totalsByCategory = rows.map { row ->
@@ -63,8 +61,7 @@ class ReportService(
     }
 
     fun balance(from: LocalDate?, to: LocalDate?): BalanceResponse {
-        val effectiveFrom = from ?: LocalDate.of(Year.now().value, 1, 1)
-        val effectiveTo = to ?: LocalDate.of(Year.now().value, 12, 31)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
 
         val totalIncome = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
         val totalExpenses = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
@@ -82,8 +79,7 @@ class ReportService(
         val donor = donorRepository.findById(donorId)
             .orElseThrow { NotFoundException("Donor not found with id: $donorId") }
 
-        val effectiveFrom = from ?: LocalDate.of(Year.now().value, 1, 1)
-        val effectiveTo = to ?: LocalDate.of(Year.now().value, 12, 31)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
 
         val donations = donationRepository.findByDonorIdAndDonationDateBetween(donorId, effectiveFrom, effectiveTo)
         val entries = donations.map { d ->

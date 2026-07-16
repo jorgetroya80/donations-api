@@ -16,34 +16,31 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/users")
+@PreAuthorize("hasRole('ADMIN')")
 class UserController(
     private val userService: UserService,
     private val userSessionTracker: UserSessionTracker,
 ) {
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     fun listUsers(pageable: Pageable): Page<UserResponse> =
         userService.listUsers(pageable).map(UserResponse::from)
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     fun getUser(@PathVariable id: Long): UserResponse =
         UserResponse.from(userService.getUser(id))
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    fun createUser(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<UserResponse> {
-        val user = userService.createUser(request)
-        return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user))
-    }
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createUser(@Valid @RequestBody request: CreateUserRequest): UserResponse =
+        UserResponse.from(userService.createUser(request))
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     fun updateUser(
         @PathVariable id: Long,
         @Valid @RequestBody request: UpdateUserRequest,
