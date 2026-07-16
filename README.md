@@ -27,7 +27,7 @@ The API is organized into domain modules with a shared infrastructure layer:
 
 Infrastructure provides auditing, global error handling, and security configuration.
 
-[More info](/docs/architecture.md) about architecture.
+[More info](/docs/architecture.md) about architecture. Key decisions and their rationale are recorded as [Architecture Decision Records](/docs/decisions/).
 
 ## Prerequisites
 

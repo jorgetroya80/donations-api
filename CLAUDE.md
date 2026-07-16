@@ -90,3 +90,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Server:** port 8081; session cookie is `HttpOnly` + `SameSite=Lax` (plus `Secure` in `prod`)
 - **Flyway:** enabled (`spring.flyway.enabled: true`); migrations V1–V7 live in `src/main/resources/db/migration/` — applied migrations are immutable, schema changes go in new versions
 - **Profiles:** `dev` enables CORS (`app.cors.enabled`, origins via `APP_CORS_ALLOWED_ORIGINS`, default `http://localhost:8080`); `prod` disables springdoc (Swagger UI + api-docs) and marks the session cookie `Secure`
+
+## Decision Records
+
+Significant or hard-to-reverse decisions (auth, data model, deploy/infra, framework/major dependency, breaking API changes) get an ADR in `docs/decisions/`. Copy `docs/decisions/ADR-template.md` to `ADR-NNN-kebab-title.md`, fill all six sections, and add a row to the index in `docs/decisions/README.md`. Link the ADR from the driving PRD/plan. **Never edit an Accepted ADR — supersede it with a new one.** See `docs/decisions/README.md` for the full process.
