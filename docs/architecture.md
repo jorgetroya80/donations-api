@@ -1,6 +1,6 @@
 # Software Architecture — Donations API v1
 
-**Version:** 1.4.0 | **Stack:** Kotlin 2.2 · Spring Boot 4.0.5 · PostgreSQL 18.3
+**Version:** 1.5.0 | **Stack:** Kotlin 2.2 · Spring Boot 4.0.5 · PostgreSQL 18.3
 
 ---
 
@@ -15,6 +15,7 @@
 7. [Security and Access Control](#7-security-and-access-control)
 8. [Interaction Flows (Sequence)](#8-interaction-flows-sequence)
 9. [Package Structure](#9-package-structure)
+10. [Observability — Event Logging](#10-observability--event-logging)
 
 ---
 
@@ -688,10 +689,14 @@ com.donations/
     ├── audit/
     │   ├── AuditableEntity.kt          Base entity (id + audit fields)
     │   └── AuditorAwareConfig.kt       Reads SecurityContext → createdBy
-    └── error/
-        ├── GlobalExceptionHandler.kt   Centralized @RestControllerAdvice
-        ├── NotFoundException.kt        Custom 404 exception
-        └── ErrorResponse.kt           JSON error structure
+    ├── error/
+    │   ├── GlobalExceptionHandler.kt   Centralized @RestControllerAdvice
+    │   ├── NotFoundException.kt        Custom 404 exception
+    │   └── ErrorResponse.kt           JSON error structure
+    └── events/
+        ├── AppEvent.kt                 Sealed event vocabulary (see §10)
+        ├── EventLogger.kt              Sole emitter; adds actor at emit time
+        └── RequestIdFilter.kt          Per-request correlation id in MDC
 
 src/main/resources/
 ├── application.yaml                     Config + dev/prod profiles
@@ -708,6 +713,76 @@ src/main/resources/
 
 ---
 
+## 10. Observability — Event Logging
+
+The application emits a **closed, typed set of events** rather than free-form log statements. Names follow the [OWASP Application Logging Vocabulary](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html); domain events extend the same `noun_verb` grammar. See [ADR-005](decisions/ADR-005-event-logging-personal-data-policy.md) for the decision and [PRD-8](PRD-8.md) for the requirements.
+
+### Why a type per event
+
+Each event is a variant of the sealed `AppEvent`, declaring its own name, level and fields. **Donor personal data is excluded by construction, not by convention** — `DonorCreated` has one `Long` field, so a name, national ID, address or email has nowhere to live. `AppEventPiiGuardTest` walks the hierarchy reflectively, so events added later are covered without editing the test.
+
+### Catalogue
+
+| Event | Level | Fields |
+|-------|-------|--------|
+| `authn_login_success` | INFO | `userid`, `sourceIp` |
+| `authn_login_fail` | WARN | `userid`, `sourceIp`, `locked` |
+| `authn_login_lock` | WARN | `userid`, `reason`, `maxlimit` |
+| `authn_password_change` | INFO | `userid` |
+| `authn_password_change_fail` | ERROR | `userid` |
+| `authz_fail` | ERROR | `userid`, `resource` |
+| `authz_admin` | WARN | `userid`, `action`, `targetId` |
+| `authz_change` | WARN | `userid`, `from`, `to` |
+| `donation_create` | INFO | `donationId`, `donorId`, `amount` |
+| `donation_update` | INFO | `donationId` |
+| `donor_create` | INFO | `donorId` |
+| `donor_update` | INFO | `donorId` |
+| `expense_create` | INFO | `expenseId`, `amount`, `category` |
+| `expense_update` | INFO | `expenseId` |
+| `error_unexpected` | ERROR | `exceptionType`, `resource` |
+
+Every event additionally carries `actor` (the acting operator, attached by `EventLogger`) and `requestId` (via MDC). **Read operations emit nothing** — lists, gets, searches and reports are silent, which is what keeps the log signal rather than a request firehose.
+
+### Three deviations from OWASP, all deliberate
+
+1. **`authn_login_fail_max` is not emitted.** Reaching the limit and locking are the same instant here, so it would duplicate `authn_login_lock`. Instead `authn_login_fail` carries `locked`, distinguishing a typo'd password from an attempt against an already-locked account — the actual brute-force signal.
+2. **`authz_admin`'s descriptor is keyed `action`, not `event`.** `EventLogger` already writes the event name under `event`; the literal grammar would emit duplicate JSON keys and most parsers keep the last, silently overwriting the event name.
+3. **CRITICAL maps to ERROR.** SLF4J has no CRITICAL level.
+
+### Correlation and format
+
+`RequestIdFilter` runs at `HIGHEST_PRECEDENCE` — ahead of the security chain, so requests rejected before authentication carry an id too — putting a UUID in MDC and removing it in a `finally`. The same id is returned on every error response as a `requestId` extension on the RFC 9457 `ProblemDetail`, so a user reporting a failure can hand over the one value needed to recover the whole request.
+
+**Debugging workflow is two hops, not one.** The correlation id scopes to a *single request* by design, so filtering on it returns only that request's events — typically just the error. To recover the surrounding session, read `actor` off the correlated event and filter on that:
+
+```
+requestId=<id from the error response>   → the failing request
+actor=<operator from that event>          → their whole session
+```
+
+Both hops use only data already in the events: no database, no added logging. Expect two greps, not one.
+
+**An id with no events is a diagnosis, not missing data.** A 401 from the security filter chain carries a correlation id but produces no event — `authn_login_fail` fires only when credentials are actually submitted. So an id that matches nothing means the client never sent credentials at all, which is usually the answer to "I keep getting 401".
+
+**Never declare an event field named `requestId`, `event` or `actor`.** Those keys are written centrally — by MDC and by `EventLogger` — and a duplicate makes Spring Boot's structured formatter reject the *entire log line*, which no test using `ListAppender` can detect because `ListAppender` never runs the formatter. `AppEventPiiGuardTest` enforces this reflectively.
+
+Output is switched by profile, with no extra dependency and no `logback-spring.xml`:
+
+| Profile | Rendering |
+|---------|-----------|
+| `dev` / default | Readable console pattern; `logging.pattern.correlation` carries `requestId` and `%kvp` surfaces event fields |
+| `prod` | ECS JSON (`logging.structured.format.console`), MDC included automatically |
+
+ECS was chosen over `logstash`/`gelf` for its stable published field names. Our own fields land flat at the top level, so they work directly as LogQL selectors if logs are ever shipped to Grafana Loki — which would be a configuration change, not reinstrumentation.
+
+### Known limits
+
+- **Stacktraces are retained** on unhandled exceptions and can contain field values from constraint-violation messages. Accepted in ADR-005, bounded by logs not leaving the host — **an assumption that expires if log shipping is introduced.**
+- **Client IPs are personal data under GDPR.** No retention period is defined because, with no log shipping, there is no retention mechanism to configure.
+- **No metrics or tracing.** "How slow is this endpoint" and "how often does this fail" are out of reach; that would be a separate decision.
+
+---
+
 ## Design Decisions Summary
 
 | Decision | Implementation | Reason |
@@ -720,3 +795,5 @@ src/main/resources/
 | Migrations | Flyway V1–V8 | Version-controlled schema, reproducible |
 | Reports | `ReportService` with no own entity | Pure aggregations, no persisted state |
 | Profiles | `dev` (CORS + Swagger) / `prod` (no Swagger) | Swagger not exposed in production |
+| Event logging | Sealed `AppEvent` + OWASP names (§10) | Donor data excluded by the type system, not by review |
+| Log format | Readable in `dev`, ECS JSON in `prod` | Local legibility without foreclosing a log platform |
