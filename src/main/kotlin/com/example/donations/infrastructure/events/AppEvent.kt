@@ -1,5 +1,6 @@
 package com.example.donations.infrastructure.events
 
+import com.example.donations.expense.ExpenseCategory
 import org.slf4j.event.Level
 import java.math.BigDecimal
 
@@ -101,4 +102,21 @@ data class DonorUpdated(val donorId: Long) : AppEvent {
     override val name = "donor_update"
     override val level = Level.INFO
     override val fields = mapOf("donorId" to donorId)
+}
+
+// category is the enum, not a String, so no free text can reach the field.
+data class ExpenseCreated(
+    val expenseId: Long,
+    val amount: BigDecimal,
+    val category: ExpenseCategory,
+) : AppEvent {
+    override val name = "expense_create"
+    override val level = Level.INFO
+    override val fields = mapOf("expenseId" to expenseId, "amount" to amount, "category" to category.name)
+}
+
+data class ExpenseUpdated(val expenseId: Long) : AppEvent {
+    override val name = "expense_update"
+    override val level = Level.INFO
+    override val fields = mapOf("expenseId" to expenseId)
 }

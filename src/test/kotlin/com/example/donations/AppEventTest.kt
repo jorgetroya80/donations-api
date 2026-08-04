@@ -1,5 +1,6 @@
 package com.example.donations
 
+import com.example.donations.expense.ExpenseCategory
 import com.example.donations.infrastructure.events.AccountLocked
 import com.example.donations.infrastructure.events.AdminAction
 import com.example.donations.infrastructure.events.AuthorizationChanged
@@ -8,6 +9,8 @@ import com.example.donations.infrastructure.events.DonationCreated
 import com.example.donations.infrastructure.events.DonationUpdated
 import com.example.donations.infrastructure.events.DonorCreated
 import com.example.donations.infrastructure.events.DonorUpdated
+import com.example.donations.infrastructure.events.ExpenseCreated
+import com.example.donations.infrastructure.events.ExpenseUpdated
 import com.example.donations.infrastructure.events.LoginFailed
 import com.example.donations.infrastructure.events.LoginSucceeded
 import com.example.donations.infrastructure.events.PasswordChangeFailed
@@ -274,5 +277,44 @@ class AppEventTest {
     @DisplayName("Donor update carries the donor id and nothing else")
     fun donorUpdatedFields() {
         assertEquals(mapOf("donorId" to 7L), DonorUpdated(7).fields)
+    }
+
+    @Test
+    @DisplayName("Expense create uses the noun_verb event name")
+    fun expenseCreatedName() {
+        assertEquals("expense_create", ExpenseCreated(3, BigDecimal("40.00"), ExpenseCategory.SUPPLIES).name)
+    }
+
+    @Test
+    @DisplayName("Expense create is logged at INFO")
+    fun expenseCreatedLevel() {
+        assertEquals(Level.INFO, ExpenseCreated(3, BigDecimal("40.00"), ExpenseCategory.SUPPLIES).level)
+    }
+
+    @Test
+    @DisplayName("Expense create carries the id, amount and the category name")
+    fun expenseCreatedFields() {
+        assertEquals(
+            mapOf("expenseId" to 3L, "amount" to BigDecimal("40.00"), "category" to "SUPPLIES"),
+            ExpenseCreated(3, BigDecimal("40.00"), ExpenseCategory.SUPPLIES).fields,
+        )
+    }
+
+    @Test
+    @DisplayName("Expense update uses the noun_verb event name")
+    fun expenseUpdatedName() {
+        assertEquals("expense_update", ExpenseUpdated(3).name)
+    }
+
+    @Test
+    @DisplayName("Expense update is logged at INFO")
+    fun expenseUpdatedLevel() {
+        assertEquals(Level.INFO, ExpenseUpdated(3).level)
+    }
+
+    @Test
+    @DisplayName("Expense update carries the expense id and nothing else")
+    fun expenseUpdatedFields() {
+        assertEquals(mapOf("expenseId" to 3L), ExpenseUpdated(3).fields)
     }
 }
