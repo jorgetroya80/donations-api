@@ -2,12 +2,14 @@ package com.example.donations
 
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import com.example.donations.infrastructure.events.RequestIdFilter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpSession
+import org.springframework.security.web.FilterChainProxy
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
@@ -17,6 +19,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -27,6 +30,9 @@ class SecurityIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
+
+    @Autowired
+    private lateinit var filterChainProxy: FilterChainProxy
 
     private fun login(username: String, password: String): MvcResult {
         return mockMvc.perform(
@@ -382,6 +388,24 @@ class SecurityIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"username":"todeactivate","password":"password123"}""")
         ).andExpect(status().isUnauthorized)
+    }
+
+    /**
+     * Proves RequestIdFilter is a container-level filter, not a member of the
+     * security chain, so its @Order applies relative to the chain as a whole.
+     * That plus the HIGHEST_PRECEDENCE assertion in RequestIdFilterTest is what
+     * places it first; neither test observes the resolved ordering directly.
+     */
+    @Test
+    @DisplayName("Request id filter is registered outside the security filter chain")
+    fun requestIdFilterIsNotInSecurityChain() {
+        val securityFilters = filterChainProxy.filterChains.flatMap { it.filters }
+
+        assertTrue(securityFilters.isNotEmpty(), "Expected a populated security filter chain")
+        assertTrue(
+            securityFilters.none { it is RequestIdFilter },
+            "RequestIdFilter must run ahead of the security chain, not inside it",
+        )
     }
 
     private fun extractId(json: String): String {
