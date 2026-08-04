@@ -1,6 +1,9 @@
 package com.example.donations.user
 
 import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.events.EventLogger
+import com.example.donations.infrastructure.events.PasswordChangeFailed
+import com.example.donations.infrastructure.events.PasswordChanged
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -11,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 class UserService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val eventLogger: EventLogger,
 ) {
 
     @Transactional(readOnly = true)
@@ -70,11 +74,13 @@ class UserService(
             ?: throw NotFoundException("User not found: $username")
 
         if (!passwordEncoder.matches(currentPassword, user.password)) {
+            eventLogger.emit(PasswordChangeFailed(username))
             throw IllegalArgumentException("Current password is incorrect")
         }
 
         user.password = passwordEncoder.encode(newPassword)!!
         user.mustChangePassword = false
         userRepository.save(user)
+        eventLogger.emit(PasswordChanged(username))
     }
 }

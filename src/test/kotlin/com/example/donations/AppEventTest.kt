@@ -3,6 +3,8 @@ package com.example.donations
 import com.example.donations.infrastructure.events.AccountLocked
 import com.example.donations.infrastructure.events.LoginFailed
 import com.example.donations.infrastructure.events.LoginSucceeded
+import com.example.donations.infrastructure.events.PasswordChangeFailed
+import com.example.donations.infrastructure.events.PasswordChanged
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.slf4j.event.Level
@@ -72,5 +74,41 @@ class AppEventTest {
             mapOf("userid" to "admin", "reason" to "maxretries", "maxlimit" to 5),
             AccountLocked("admin", "maxretries", 5).fields,
         )
+    }
+
+    @Test
+    @DisplayName("Password change uses the OWASP event name")
+    fun passwordChangedName() {
+        assertEquals("authn_password_change", PasswordChanged("admin").name)
+    }
+
+    @Test
+    @DisplayName("Password change is logged at INFO")
+    fun passwordChangedLevel() {
+        assertEquals(Level.INFO, PasswordChanged("admin").level)
+    }
+
+    @Test
+    @DisplayName("Password change carries the userid and nothing else")
+    fun passwordChangedFields() {
+        assertEquals(mapOf("userid" to "admin"), PasswordChanged("admin").fields)
+    }
+
+    @Test
+    @DisplayName("Password change failure uses the OWASP event name")
+    fun passwordChangeFailedName() {
+        assertEquals("authn_password_change_fail", PasswordChangeFailed("admin").name)
+    }
+
+    @Test
+    @DisplayName("Password change failure is logged at ERROR (OWASP CRITICAL has no SLF4J level)")
+    fun passwordChangeFailedLevel() {
+        assertEquals(Level.ERROR, PasswordChangeFailed("admin").level)
+    }
+
+    @Test
+    @DisplayName("Password change failure carries the userid and nothing else")
+    fun passwordChangeFailedFields() {
+        assertEquals(mapOf("userid" to "admin"), PasswordChangeFailed("admin").fields)
     }
 }

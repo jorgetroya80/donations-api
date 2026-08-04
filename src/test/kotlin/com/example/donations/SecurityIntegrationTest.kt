@@ -2,6 +2,7 @@ package com.example.donations
 
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
@@ -425,6 +426,42 @@ class SecurityIntegrationTest {
         )
         assertEquals("127.0.0.1", fieldsOf(fails.first())["sourceIp"])
         assertTrue(events.none { it.message == "authn_login_fail_max" })
+    }
+
+    /**
+     * Password-change events fire only on the self-service path in UserService,
+     * so a real request is what exercises them. The failure is ERROR rather than
+     * WARN because it means someone authenticated and then failed a second check
+     * (ADR-005 maps OWASP's CRITICAL to ERROR).
+     */
+    @Test
+    @DisplayName("Self-service password change emits a change event, a wrong current password an ERROR")
+    fun passwordChangeEmitsEvents() {
+        val session = extractSession(login("admin", "admin"))
+
+        val events = captureEvents {
+            mockMvc.perform(
+                put("/api/v1/users/me/password")
+                    .session(session)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"currentPassword":"wrongcurrent","newPassword":"newpassword1"}""")
+            ).andExpect(status().isBadRequest)
+
+            mockMvc.perform(
+                put("/api/v1/users/me/password")
+                    .session(session)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"currentPassword":"admin","newPassword":"newpassword1"}""")
+            ).andExpect(status().isNoContent)
+        }
+
+        val failed = events.single { it.message == "authn_password_change_fail" }
+        assertEquals(Level.ERROR, failed.level)
+        assertEquals("admin", fieldsOf(failed)["userid"])
+
+        val changed = events.single { it.message == "authn_password_change" }
+        assertEquals(Level.INFO, changed.level)
+        assertEquals("admin", fieldsOf(changed)["userid"])
     }
 
     private fun captureEvents(block: () -> Unit): List<ILoggingEvent> {

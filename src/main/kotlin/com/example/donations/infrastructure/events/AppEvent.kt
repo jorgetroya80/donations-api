@@ -30,3 +30,16 @@ data class AccountLocked(val userid: String, val reason: String, val maxlimit: I
     override val level = Level.WARN
     override val fields = mapOf("userid" to userid, "reason" to reason, "maxlimit" to maxlimit)
 }
+
+data class PasswordChanged(val userid: String) : AppEvent {
+    override val name = "authn_password_change"
+    override val level = Level.INFO
+    override val fields = mapOf("userid" to userid)
+}
+
+// OWASP marks this CRITICAL; SLF4J has no such level, so it maps to ERROR (ADR-005).
+data class PasswordChangeFailed(val userid: String) : AppEvent {
+    override val name = "authn_password_change_fail"
+    override val level = Level.ERROR
+    override val fields = mapOf("userid" to userid)
+}
