@@ -12,10 +12,11 @@ Nothing blocked. Login-failure event mapping resolved in the plan (three moments
   - **Open for Jorge:** adopt `%kvp` so dev shows event fields, not just the event name? See plan → Checkpoint 1 note.
 
 ## Phase 2: Security Events
-- [ ] Task 4: `authn_login_fail` (with `locked` field), `authn_login_lock` — delete the 3 raw log statements
-- [ ] Task 5: `authn_password_change` / `_fail`
-- [ ] Task 6: `authz_fail`, `authz_admin`, `authz_change`
-- [ ] CHECKPOINT 2: full tests green, no raw loggers left in auth path, report to Jorge
+- [x] Task 4: `authn_login_fail` (with `locked` field), `authn_login_lock` — delete the 3 raw log statements
+- [x] Task 5: `authn_password_change` / `_fail`
+- [x] Task 6: `authz_fail`, `authz_admin`, `authz_change`
+- [x] CHECKPOINT 2: full tests green, no raw loggers left in auth path, report to Jorge
+  - **Open for Jorge:** `authz_admin` does not identify *who* was created/updated — only the acting admin. Adding a `targetId` field would close it. See plan → Phase 2 note.
 
 ## Phase 3: Domain Events
 - [ ] Task 7: `donation_create` / `donation_update`
