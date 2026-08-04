@@ -26,6 +26,11 @@ Nothing blocked. Login-failure event mapping resolved in the plan (three moments
   - ADR-005 amended mid-phase: `actor` permitted on all events (implementation contradicted the original wording).
 
 ## Phase 4: Error Path & Close-out
-- [ ] Task 10: `error_unexpected` (keep stacktrace)
-- [ ] Task 11: Document catalogue in `docs/architecture.md`, close #47
-- [ ] CHECKPOINT 4: reconstruct a failure from correlation id alone — no DB, no added logging. NO COMMIT — report and wait
+- [x] Task 10: `error_unexpected` (keep stacktrace) — plus `requestId` on every error response
+- [x] Task 11: Document catalogue in `docs/architecture.md`
+- [x] CHECKPOINT 4: **met** — a 500 reconstructed from the correlation id alone, no DB, no added logging
+- [ ] **#47 deliberately left open** — the work is unmerged on `feat-monitoring`. Close it on merge, via `Closes #47` in the PR.
+
+## Follow-ups for Jorge
+- [ ] api-client: additive change — `requestId` now on every error response. Minor bump + changelog line ("include `requestId` in bug reports"). Strict-deserialization clients would reject the unknown property.
+- [ ] `CLAUDE.md`'s `bootRun` command is wrong: `-PmainClass=…TestDonationsApplicationKt` has no wiring in `build.gradle`, so it starts `DonationsApplication` against `localhost:5432` instead of Testcontainers. Unrelated to this work.
