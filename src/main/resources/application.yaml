@@ -32,6 +32,9 @@ management:
     health:
       probes:
         enabled: true   # exposes /actuator/health/liveness (livenessState only, no DB)
+logging:
+  pattern:
+    correlation: "[%X{requestId:-}] "   # readable pattern drops MDC otherwise; prod uses JSON instead
 
 ---
 spring:
@@ -58,3 +61,7 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+logging:
+  structured:
+    format:
+      console: ecs
