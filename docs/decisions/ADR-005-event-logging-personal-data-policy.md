@@ -63,9 +63,16 @@ per-request correlation id in MDC.
   cannot be emitted — there is no field to hold them. Passwords and session identifiers are
   likewise unrepresentable. A test asserts no event type declares a forbidden field, so the
   policy fails the build rather than failing code review.
-- **Permitted identifiers are internal entity ids and monetary amounts.** Usernames and client
-  IP addresses appear **only** in authentication and authorization events, where OWASP
-  prescribes them. They are not attached to domain events.
+- **Permitted identifiers are internal entity ids and monetary amounts.** Client IP addresses
+  appear **only** in authentication events, where OWASP prescribes them.
+- **Every event carries the acting operator's username** as an `actor` field, attached
+  centrally by the emitter rather than declared per event. Security events additionally carry
+  `userid` explicitly, per the OWASP field lists, which is why the two duplicate there.
+  This is deliberate: the personal-data rule protects **donors**, who did not consent to
+  appearing in logs, not **operator accounts**, whose actions this application already audits
+  in `created_by`/`updated_by` (`AuditableEntity.kt:25-35`). Removing `actor` from domain
+  events would mean answering "who recorded this donation?" with a database query — the exact
+  thing PRD-8's success criterion exists to avoid.
 - **Output format is Spring Boot's built-in structured logging, switched by profile** — the
   readable console pattern under `dev`, JSON under `prod`, configured in
   `src/main/resources/application.yaml` alongside the existing CORS and cookie-security
@@ -137,6 +144,11 @@ Implementation is pending; see PRD-8 (issue #47).
 - **The personal-data policy is enforced by the compiler and one test**, not by remembering it.
   Adding an event is adding a type; there is no path by which a donor's national ID reaches a
   log line short of deliberately declaring a field for it.
+- **Operator usernames are present on every event, including domain events.** This is a
+  deliberate narrowing of "no personal data in logs" to mean donor data specifically. If the
+  church ever needs operator activity to be pseudonymous — a works-council agreement, or staff
+  objecting to their actions being individually attributable in logs — this is the bullet that
+  has to change, and the change is one line in the emitter rather than a rework of the events.
 - **A sustained attack against a locked account is queryable** — filter `authn_login_fail` on
   `locked=true`. A mapping that emitted `authn_login_fail_max` instead would have left this
   invisible.
