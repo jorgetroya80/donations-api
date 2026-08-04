@@ -1,6 +1,8 @@
 package com.example.donations.infrastructure.config
 
+import com.example.donations.infrastructure.events.RequestIdFilter
 import jakarta.servlet.http.HttpServletResponse
+import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -53,6 +55,7 @@ class SecurityConfig(
                 val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Authentication required")
                 problem.title = HttpStatus.UNAUTHORIZED.reasonPhrase
                 problem.instance = URI.create(request.requestURI)
+                MDC.get(RequestIdFilter.REQUEST_ID)?.let { problem.setProperty("requestId", it) }
                 response.status = HttpServletResponse.SC_UNAUTHORIZED
                 response.characterEncoding = Charsets.UTF_8.name()
                 response.contentType = MediaType.APPLICATION_PROBLEM_JSON_VALUE

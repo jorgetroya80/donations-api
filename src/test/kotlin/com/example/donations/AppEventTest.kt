@@ -15,6 +15,7 @@ import com.example.donations.infrastructure.events.LoginFailed
 import com.example.donations.infrastructure.events.LoginSucceeded
 import com.example.donations.infrastructure.events.PasswordChangeFailed
 import com.example.donations.infrastructure.events.PasswordChanged
+import com.example.donations.infrastructure.events.UnexpectedError
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.slf4j.event.Level
@@ -316,5 +317,26 @@ class AppEventTest {
     @DisplayName("Expense update carries the expense id and nothing else")
     fun expenseUpdatedFields() {
         assertEquals(mapOf("expenseId" to 3L), ExpenseUpdated(3).fields)
+    }
+
+    @Test
+    @DisplayName("Unexpected error uses the OWASP event name")
+    fun unexpectedErrorName() {
+        assertEquals("error_unexpected", UnexpectedError("java.lang.IllegalStateException", "/api/v1/donors").name)
+    }
+
+    @Test
+    @DisplayName("Unexpected error is logged at ERROR")
+    fun unexpectedErrorLevel() {
+        assertEquals(Level.ERROR, UnexpectedError("java.lang.IllegalStateException", "/api/v1/donors").level)
+    }
+
+    @Test
+    @DisplayName("Unexpected error carries the exception type and resource, never a message")
+    fun unexpectedErrorFields() {
+        assertEquals(
+            mapOf("exceptionType" to "java.lang.IllegalStateException", "resource" to "/api/v1/donors"),
+            UnexpectedError("java.lang.IllegalStateException", "/api/v1/donors").fields,
+        )
     }
 }

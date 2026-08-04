@@ -1,6 +1,7 @@
 package com.example.donations
 
 import ch.qos.logback.classic.Level
+import com.example.donations.infrastructure.events.RequestIdFilter
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -511,4 +512,60 @@ class DonorManagementTest {
 
         assertTrue(events.isEmpty(), "Reads must be silent, captured: ${events.map { it.message }}")
     }
+
+    /**
+     * The correlation id is only useful if the user's error response and the log
+     * carry the same one — that match is what turns "it broke" into a query.
+     */
+    @Test
+    @DisplayName("Unexpected error emits error_unexpected carrying the response's requestId")
+    fun unexpectedErrorEmitsCorrelatedEvent() {
+        lateinit var body: String
+        val events = TestEvents.capture {
+            body = mockMvc.perform(
+                get("/api/v1/donors")
+                    .session(operatorSession)
+                    .param("sort", "noSuchProperty")
+            )
+                .andExpect(status().isInternalServerError)
+                .andReturn().response.contentAsString
+        }
+
+        val event = events.single { it.message == "error_unexpected" }
+        assertEquals(Level.ERROR, event.level)
+
+        val responseRequestId = extractRequestId(body)
+        assertTrue(responseRequestId.isNotBlank())
+        assertEquals(
+            mapOf(
+                "event" to "error_unexpected",
+                "exceptionType" to "org.springframework.data.core.PropertyReferenceException",
+                "resource" to "/api/v1/donors",
+                "actor" to "operator",
+            ),
+            TestEvents.fieldsOf(event),
+        )
+        // The correlation lives in MDC, not in a field: declaring it as a field
+        // makes the structured formatter drop the whole line in prod.
+        assertEquals(responseRequestId, event.mdcPropertyMap[RequestIdFilter.REQUEST_ID])
+    }
+
+    @Test
+    @DisplayName("A 4xx response also carries the correlation id")
+    fun validationErrorCarriesRequestId() {
+        val body = mockMvc.perform(
+            post("/api/v1/donors")
+                .session(operatorSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"fullName":"","nationalId":"12345678Z"}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andReturn().response.contentAsString
+
+        assertTrue(extractRequestId(body).isNotBlank())
+    }
+
+    private fun extractRequestId(responseBody: String): String =
+        """"requestId"\s*:\s*"([^"]+)"""".toRegex().find(responseBody)?.groupValues?.get(1)
+            ?: throw AssertionError("No requestId in response: $responseBody")
 }

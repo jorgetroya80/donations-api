@@ -1,6 +1,7 @@
 package com.example.donations
 
 import com.example.donations.infrastructure.events.AppEvent
+import com.example.donations.infrastructure.events.RequestIdFilter
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import kotlin.reflect.KClass
@@ -44,6 +45,29 @@ class AppEventPiiGuardTest {
                 assertTrue(
                     fieldName.lowercase() !in forbidden,
                     "${type.simpleName} declares forbidden field '$fieldName'",
+                )
+            }
+        }
+    }
+
+    /**
+     * EventLogger writes "event" and "actor" itself, and RequestIdFilter puts
+     * "requestId" in MDC. Spring Boot's structured formatter rejects a duplicate
+     * key by dropping the entire line, so an event declaring one of these is
+     * invisible in prod while still passing a ListAppender test.
+     */
+    @Test
+    @DisplayName("No event type declares a field that collides with a reserved log key")
+    fun noReservedKeyCollisions() {
+        val reserved = setOf("event", "actor", RequestIdFilter.REQUEST_ID)
+
+        allEventTypes(AppEvent::class).forEach { type ->
+            val declared = type.declaredMemberProperties.map { it.name } +
+                (type.primaryConstructor?.parameters?.mapNotNull { it.name } ?: emptyList())
+            declared.filterNot { it in interfaceMembers }.forEach { fieldName ->
+                assertTrue(
+                    fieldName !in reserved,
+                    "${type.simpleName} declares '$fieldName', which collides with a reserved log key",
                 )
             }
         }

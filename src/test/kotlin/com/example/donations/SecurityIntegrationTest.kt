@@ -73,6 +73,34 @@ class SecurityIntegrationTest {
             .andExpect(jsonPath("$.instance").value("/api/v1/users"))
     }
 
+    /**
+     * The filter-chain 401 builds its own ProblemDetail (ADR-004), so it has to
+     * carry the correlation id explicitly — otherwise "I keep getting 401" is
+     * the one report that hands the operator nothing to search on.
+     */
+    @Test
+    @DisplayName("The 401 body carries a correlation id")
+    fun unauthenticatedResponseCarriesRequestId() {
+        mockMvc.perform(get("/api/v1/users"))
+            .andExpect(status().isUnauthorized)
+            .andExpect(jsonPath("$.requestId").isNotEmpty)
+    }
+
+    /** Same reasoning for the other hand-built ProblemDetail, the workflow gate. */
+    @Test
+    @DisplayName("The password-gate 403 body carries a correlation id")
+    fun passwordGateResponseCarriesRequestId() {
+        val session = extractSession(login("admin", "admin"))
+
+        mockMvc.perform(
+            get("/api/v1/users")
+                .session(session)
+        )
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
+            .andExpect(jsonPath("$.requestId").isNotEmpty)
+    }
+
     @Test
     @DisplayName("Login with valid credentials returns 200 and creates session")
     fun loginWithValidCredentialsReturns200() {

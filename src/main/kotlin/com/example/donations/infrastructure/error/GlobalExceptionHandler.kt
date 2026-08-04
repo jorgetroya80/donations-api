@@ -2,9 +2,12 @@ package com.example.donations.infrastructure.error
 
 import com.example.donations.infrastructure.events.AuthorizationFailed
 import com.example.donations.infrastructure.events.EventLogger
+import com.example.donations.infrastructure.events.RequestIdFilter
+import com.example.donations.infrastructure.events.UnexpectedError
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -66,8 +69,9 @@ class GlobalExceptionHandler(
         problem(HttpStatus.BAD_REQUEST, ex.message ?: "Bad request")
 
     @ExceptionHandler(Exception::class)
-    fun handleAll(ex: Exception): ProblemDetail {
+    fun handleAll(ex: Exception, request: HttpServletRequest): ProblemDetail {
         log.error("Unexpected error", ex)
+        eventLogger.emit(UnexpectedError(ex.javaClass.name, request.requestURI))
         return problem(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error")
     }
 
@@ -81,6 +85,9 @@ class GlobalExceptionHandler(
         if (fields != null) {
             problemDetail.setProperty("fields", fields)
         }
+        // Extension property, per ADR-004's pattern: gives the caller the one
+        // value needed to recover every event from their failed request.
+        MDC.get(RequestIdFilter.REQUEST_ID)?.let { problemDetail.setProperty("requestId", it) }
         return problemDetail
     }
 }

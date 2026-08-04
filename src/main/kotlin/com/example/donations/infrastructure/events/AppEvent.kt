@@ -120,3 +120,19 @@ data class ExpenseUpdated(val expenseId: Long) : AppEvent {
     override val level = Level.INFO
     override val fields = mapOf("expenseId" to expenseId)
 }
+
+/**
+ * The exception *message* is deliberately absent: it can embed the field value
+ * that caused the failure. That risk is accepted for the stacktrace only, which
+ * stays where it is (ADR-005) — it is not duplicated into a queryable field.
+ *
+ * There is no requestId field: MDC already puts one on every line, and declaring
+ * it here made the structured formatter reject the whole event as a duplicate key.
+ * resource names the failing endpoint so diagnosis does not depend on the
+ * stacktrace, which is the one channel that can carry field values.
+ */
+data class UnexpectedError(val exceptionType: String, val resource: String) : AppEvent {
+    override val name = "error_unexpected"
+    override val level = Level.ERROR
+    override val fields = mapOf("exceptionType" to exceptionType, "resource" to resource)
+}
