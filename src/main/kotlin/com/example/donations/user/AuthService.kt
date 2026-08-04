@@ -2,10 +2,10 @@ package com.example.donations.user
 
 import com.example.donations.infrastructure.config.PasswordChangeRequiredFilter
 import com.example.donations.infrastructure.events.EventLogger
+import com.example.donations.infrastructure.events.LoginFailed
 import com.example.donations.infrastructure.events.LoginSucceeded
 import com.example.donations.infrastructure.session.UserSessionTracker
 import jakarta.servlet.http.HttpServletRequest
-import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.LockedException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -23,11 +23,9 @@ class AuthService(
     private val eventLogger: EventLogger,
 ) {
 
-    private val log = LoggerFactory.getLogger(AuthService::class.java)
-
     fun login(request: LoginRequest, httpRequest: HttpServletRequest): LoginResponse {
         if (loginAttemptService.isLocked(request.username)) {
-            log.warn("Rejected login for locked account '{}' from {}", request.username, httpRequest.remoteAddr)
+            eventLogger.emit(LoginFailed(request.username, httpRequest.remoteAddr, locked = true))
             throw LockedException("Account temporarily locked")
         }
 
@@ -37,11 +35,11 @@ class AuthService(
             )
         } catch (ex: AuthenticationException) {
             loginAttemptService.recordFailure(request.username)
-            log.warn("Failed login for '{}' from {}", request.username, httpRequest.remoteAddr)
+            eventLogger.emit(LoginFailed(request.username, httpRequest.remoteAddr, locked = false))
             throw ex
         }
         loginAttemptService.recordSuccess(request.username)
-        eventLogger.emit(LoginSucceeded(request.username))
+        eventLogger.emit(LoginSucceeded(request.username, httpRequest.remoteAddr))
         val context = SecurityContextHolder.createEmptyContext()
         context.authentication = authentication
         SecurityContextHolder.setContext(context)

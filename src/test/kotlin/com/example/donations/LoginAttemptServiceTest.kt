@@ -1,5 +1,6 @@
 package com.example.donations
 
+import com.example.donations.infrastructure.events.EventLogger
 import com.example.donations.user.LoginAttemptService
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -24,7 +25,7 @@ class LoginAttemptServiceTest {
     }
 
     private val clock = MutableClock(Instant.parse("2026-06-10T10:00:00Z"))
-    private val service = LoginAttemptService(clock)
+    private val service = LoginAttemptService(EventLogger(), clock)
 
     @Test
     @DisplayName("Account is not locked below the failure threshold")

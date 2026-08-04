@@ -1,6 +1,7 @@
 package com.example.donations.user
 
-import org.slf4j.LoggerFactory
+import com.example.donations.infrastructure.events.AccountLocked
+import com.example.donations.infrastructure.events.EventLogger
 import org.springframework.stereotype.Service
 import java.time.Clock
 import java.time.Duration
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Service
 class LoginAttemptService(
+    private val eventLogger: EventLogger,
     private val clock: Clock = Clock.systemUTC(),
 ) {
 
@@ -37,10 +39,7 @@ class LoginAttemptService(
             Attempts(failures, lockedUntil)
         }
         if (entry?.failures == MAX_FAILURES) {
-            log.info(
-                "Account '{}' locked for {} minutes after {} failed login attempts",
-                username, LOCK_DURATION.toMinutes(), entry.failures,
-            )
+            eventLogger.emit(AccountLocked(username, reason = "maxretries", maxlimit = MAX_FAILURES))
         }
     }
 
@@ -51,7 +50,6 @@ class LoginAttemptService(
     private fun key(username: String) = username.lowercase()
 
     companion object {
-        private val log = LoggerFactory.getLogger(LoginAttemptService::class.java)
         const val MAX_FAILURES = 5
         val LOCK_DURATION: Duration = Duration.ofMinutes(15)
     }

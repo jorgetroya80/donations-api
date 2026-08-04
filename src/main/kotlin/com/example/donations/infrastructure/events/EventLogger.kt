@@ -5,9 +5,12 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 
 /**
- * The only production class that holds a Logger (ADR-005). Events are written
- * through SLF4J's fluent API so each field stays a key-value pair rather than
- * being interpolated into the message.
+ * The only route by which application events are logged (ADR-005). Events are
+ * written through SLF4J's fluent API so each field stays a key-value pair rather
+ * than being interpolated into the message.
+ *
+ * GlobalExceptionHandler is the one other production class holding a Logger: it
+ * keeps a raw stacktrace on unhandled exceptions, which no event can carry.
  */
 @Component
 class EventLogger {

@@ -13,8 +13,20 @@ sealed interface AppEvent {
     val fields: Map<String, Any?>
 }
 
-data class LoginSucceeded(val userid: String) : AppEvent {
+data class LoginSucceeded(val userid: String, val sourceIp: String) : AppEvent {
     override val name = "authn_login_success"
     override val level = Level.INFO
-    override val fields = mapOf("userid" to userid)
+    override val fields = mapOf("userid" to userid, "sourceIp" to sourceIp)
+}
+
+data class LoginFailed(val userid: String, val sourceIp: String, val locked: Boolean) : AppEvent {
+    override val name = "authn_login_fail"
+    override val level = Level.WARN
+    override val fields = mapOf("userid" to userid, "sourceIp" to sourceIp, "locked" to locked)
+}
+
+data class AccountLocked(val userid: String, val reason: String, val maxlimit: Int) : AppEvent {
+    override val name = "authn_login_lock"
+    override val level = Level.WARN
+    override val fields = mapOf("userid" to userid, "reason" to reason, "maxlimit" to maxlimit)
 }

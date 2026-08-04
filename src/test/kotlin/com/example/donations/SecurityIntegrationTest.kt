@@ -2,7 +2,12 @@ package com.example.donations
 
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import com.example.donations.infrastructure.events.RequestIdFilter
+import com.example.donations.user.LoginAttemptService
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -19,6 +24,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @SpringBootTest
@@ -389,6 +395,53 @@ class SecurityIntegrationTest {
                 .content("""{"username":"todeactivate","password":"password123"}""")
         ).andExpect(status().isUnauthorized)
     }
+
+    /**
+     * The fail events are emitted by AuthService, which only runs on the real
+     * login path, so this is asserted here rather than in AuthEventTest. Five
+     * rejections and the attempt against the now-locked account each produce one
+     * authn_login_fail; the locked flag is what distinguishes the last one, and
+     * no second lock event is emitted for it (ADR-005).
+     */
+    @Test
+    @DisplayName("Failed logins emit one fail event each, a single lock, then locked=true")
+    fun failedLoginsEmitAuthenticationEvents() {
+        val events = captureEvents {
+            repeat(LoginAttemptService.MAX_FAILURES + 1) {
+                mockMvc.perform(
+                    post("/api/v1/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""{"username":"admin","password":"wrongpassword"}""")
+                ).andExpect(status().isUnauthorized)
+            }
+        }
+
+        val fails = events.filter { it.message == "authn_login_fail" }
+        assertEquals(LoginAttemptService.MAX_FAILURES + 1, fails.size)
+        assertEquals(1, events.count { it.message == "authn_login_lock" })
+        assertEquals(
+            List(LoginAttemptService.MAX_FAILURES) { false } + true,
+            fails.map { fieldsOf(it)["locked"] },
+        )
+        assertEquals("127.0.0.1", fieldsOf(fails.first())["sourceIp"])
+        assertTrue(events.none { it.message == "authn_login_fail_max" })
+    }
+
+    private fun captureEvents(block: () -> Unit): List<ILoggingEvent> {
+        val eventsLogger = LoggerFactory.getLogger("com.example.donations.events") as Logger
+        val appender = ListAppender<ILoggingEvent>()
+        appender.start()
+        eventsLogger.addAppender(appender)
+        try {
+            block()
+        } finally {
+            eventsLogger.detachAppender(appender)
+            appender.stop()
+        }
+        return appender.list.toList()
+    }
+
+    private fun fieldsOf(event: ILoggingEvent) = event.keyValuePairs.associate { it.key to it.value }
 
     /**
      * Proves RequestIdFilter is a container-level filter, not a member of the
