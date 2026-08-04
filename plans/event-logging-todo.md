@@ -5,10 +5,11 @@ Plan: [event-logging.md](event-logging.md) · PRD: [PRD-8](../docs/PRD-8.md) (#4
 Nothing blocked. Login-failure event mapping resolved in the plan (three moments, two events, `authn_login_fail_max` dropped as redundant).
 
 ## Phase 1: Tracer Bullet
-- [ ] Task 1: `AppEvent` sealed hierarchy + `EventLogger` + `authn_login_success` end to end
-- [ ] Task 2: Request correlation filter (MDC set + cleared)
-- [ ] Task 3: Profile-switched structured log format
-- [ ] CHECKPOINT 1: one correlated event visible in both `dev` and `prod` rendering, report to Jorge
+- [x] Task 1: `AppEvent` sealed hierarchy + `EventLogger` + `authn_login_success` end to end
+- [x] Task 2: Request correlation filter (MDC set + cleared)
+- [x] Task 3: Profile-switched structured log format (+ `logging.pattern.correlation` for dev)
+- [x] CHECKPOINT 1: one correlated event visible in both `dev` and `prod` rendering, report to Jorge
+  - **Open for Jorge:** adopt `%kvp` so dev shows event fields, not just the event name? See plan → Checkpoint 1 note.
 
 ## Phase 2: Security Events
 - [ ] Task 4: `authn_login_fail` (with `locked` field), `authn_login_lock` — delete the 3 raw log statements
