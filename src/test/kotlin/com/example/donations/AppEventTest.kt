@@ -6,6 +6,8 @@ import com.example.donations.infrastructure.events.AuthorizationChanged
 import com.example.donations.infrastructure.events.AuthorizationFailed
 import com.example.donations.infrastructure.events.DonationCreated
 import com.example.donations.infrastructure.events.DonationUpdated
+import com.example.donations.infrastructure.events.DonorCreated
+import com.example.donations.infrastructure.events.DonorUpdated
 import com.example.donations.infrastructure.events.LoginFailed
 import com.example.donations.infrastructure.events.LoginSucceeded
 import com.example.donations.infrastructure.events.PasswordChangeFailed
@@ -236,5 +238,41 @@ class AppEventTest {
     @DisplayName("Donation update carries the donation id and nothing else")
     fun donationUpdatedFields() {
         assertEquals(mapOf("donationId" to 1L), DonationUpdated(1).fields)
+    }
+
+    @Test
+    @DisplayName("Donor create uses the noun_verb event name")
+    fun donorCreatedName() {
+        assertEquals("donor_create", DonorCreated(7).name)
+    }
+
+    @Test
+    @DisplayName("Donor create is logged at INFO")
+    fun donorCreatedLevel() {
+        assertEquals(Level.INFO, DonorCreated(7).level)
+    }
+
+    @Test
+    @DisplayName("Donor create carries the donor id and nothing else")
+    fun donorCreatedFields() {
+        assertEquals(mapOf("donorId" to 7L), DonorCreated(7).fields)
+    }
+
+    @Test
+    @DisplayName("Donor update uses the noun_verb event name")
+    fun donorUpdatedName() {
+        assertEquals("donor_update", DonorUpdated(7).name)
+    }
+
+    @Test
+    @DisplayName("Donor update is logged at INFO")
+    fun donorUpdatedLevel() {
+        assertEquals(Level.INFO, DonorUpdated(7).level)
+    }
+
+    @Test
+    @DisplayName("Donor update carries the donor id and nothing else")
+    fun donorUpdatedFields() {
+        assertEquals(mapOf("donorId" to 7L), DonorUpdated(7).fields)
     }
 }

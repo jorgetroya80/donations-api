@@ -1,5 +1,6 @@
 package com.example.donations
 
+import ch.qos.logback.classic.Level
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -17,6 +18,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -433,5 +436,79 @@ class DonorManagementTest {
             get("/api/v1/donors")
                 .session(treasurerSession)
         ).andExpect(status().isOk)
+    }
+
+    // --- Event tests ---
+
+    /**
+     * The donor aggregate is exactly what ADR-005 forbids logging, so these
+     * assertions check the whole emission, not just the id: any donor field that
+     * ever leaked into an event would show up as an extra key here.
+     */
+    @Test
+    @DisplayName("Creating a donor emits donor_create carrying the id only")
+    fun createDonorEmitsEvent() {
+        lateinit var result: MvcResult
+        val events = TestEvents.capture {
+            result = createDonor(operatorSession, "Juan Garcia", "12345678Z")
+        }
+        val donorId = extractId(result.response.contentAsString)
+
+        val created = events.single { it.message == "donor_create" }
+        assertEquals(Level.INFO, created.level)
+        assertEquals(
+            mapOf("event" to "donor_create", "donorId" to donorId, "actor" to "operator"),
+            TestEvents.fieldsOf(created),
+        )
+    }
+
+    @Test
+    @DisplayName("Updating a donor emits donor_update carrying the id only")
+    fun updateDonorEmitsEvent() {
+        val donorId = extractId(createDonor(operatorSession, "Juan Garcia", "12345678Z").response.contentAsString)
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                put("/api/v1/donors/$donorId")
+                    .session(operatorSession)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"fullName":"Juan Garcia Lopez","email":"juan@example.com"}""")
+            ).andExpect(status().isOk)
+        }
+
+        val updated = events.single { it.message == "donor_update" }
+        assertEquals(Level.INFO, updated.level)
+        assertEquals(
+            mapOf("event" to "donor_update", "donorId" to donorId, "actor" to "operator"),
+            TestEvents.fieldsOf(updated),
+        )
+    }
+
+    @Test
+    @DisplayName("Listing, searching and getting donors emit nothing")
+    fun readsEmitNothing() {
+        val donorId = extractId(createDonor(operatorSession, "Maria Lopez", "X1234567L").response.contentAsString)
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                get("/api/v1/donors")
+                    .session(operatorSession)
+            ).andExpect(status().isOk)
+
+            // A search term is user-supplied text about a person: it must not
+            // reach the log by any route.
+            mockMvc.perform(
+                get("/api/v1/donors")
+                    .session(operatorSession)
+                    .param("search", "Maria")
+            ).andExpect(status().isOk)
+
+            mockMvc.perform(
+                get("/api/v1/donors/$donorId")
+                    .session(operatorSession)
+            ).andExpect(status().isOk)
+        }
+
+        assertTrue(events.isEmpty(), "Reads must be silent, captured: ${events.map { it.message }}")
     }
 }

@@ -88,3 +88,17 @@ data class DonationUpdated(val donationId: Long) : AppEvent {
     override val level = Level.INFO
     override val fields = mapOf("donationId" to donationId)
 }
+
+// The donor aggregate holds names, national ids, addresses and emails. These two
+// events declare an id and nothing else, so none of it is representable.
+data class DonorCreated(val donorId: Long) : AppEvent {
+    override val name = "donor_create"
+    override val level = Level.INFO
+    override val fields = mapOf("donorId" to donorId)
+}
+
+data class DonorUpdated(val donorId: Long) : AppEvent {
+    override val name = "donor_update"
+    override val level = Level.INFO
+    override val fields = mapOf("donorId" to donorId)
+}
