@@ -3,6 +3,9 @@ package com.example.donations.donation
 import com.example.donations.donor.DonorRepository
 import com.example.donations.infrastructure.defaultYearRange
 import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.events.DonationCreated
+import com.example.donations.infrastructure.events.DonationUpdated
+import com.example.donations.infrastructure.events.EventLogger
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -14,6 +17,7 @@ import java.time.LocalDate
 class DonationService(
     private val donationRepository: DonationRepository,
     private val donorRepository: DonorRepository,
+    private val eventLogger: EventLogger,
 ) {
 
     fun listDonations(pageable: Pageable, from: LocalDate?, to: LocalDate?): Page<Donation> {
@@ -48,12 +52,14 @@ class DonationService(
             if (isDuplicate && request.confirmDuplicate) {
                 val donation = buildDonation(request, donor)
                 val saved = donationRepository.save(donation)
+                eventLogger.emit(DonationCreated(saved.id!!, saved.donor?.id, saved.amount))
                 return DonationCreateResponse.savedWithWarning(saved)
             }
         }
 
         val donation = buildDonation(request, donor)
         val saved = donationRepository.save(donation)
+        eventLogger.emit(DonationCreated(saved.id!!, saved.donor?.id, saved.amount))
         return DonationCreateResponse.saved(saved)
     }
 
@@ -74,7 +80,9 @@ class DonationService(
             donation.donor = donor
         }
 
-        return donationRepository.save(donation)
+        val saved = donationRepository.save(donation)
+        eventLogger.emit(DonationUpdated(id))
+        return saved
     }
 
     private fun buildDonation(request: CreateDonationRequest, donor: com.example.donations.donor.Donor?): Donation {

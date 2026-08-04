@@ -253,14 +253,19 @@ class UserManagementTest {
     // --- Authorization events ---
 
     @Test
-    @DisplayName("Admin creating a user emits one authz_admin")
+    @DisplayName("Admin creating a user emits one authz_admin naming the created user")
     fun createUserEmitsAdminAction() {
-        val events = TestEvents.capture { createUser("auditedcreate") }
+        lateinit var createResult: MvcResult
+        val events = TestEvents.capture { createResult = createUser("auditedcreate") }
 
         val action = events.single { it.message == "authz_admin" }
         assertEquals(Level.WARN, action.level)
         assertEquals("admin", TestEvents.fieldsOf(action)["userid"])
         assertEquals(AdminAction.USER_CREATE, TestEvents.fieldsOf(action)["action"])
+        assertEquals(
+            extractId(createResult.response.contentAsString).toLong(),
+            TestEvents.fieldsOf(action)["targetId"],
+        )
     }
 
     @Test
@@ -279,6 +284,7 @@ class UserManagementTest {
 
         val action = events.single { it.message == "authz_admin" }
         assertEquals(AdminAction.PASSWORD_RESET, TestEvents.fieldsOf(action)["action"])
+        assertEquals(userId.toLong(), TestEvents.fieldsOf(action)["targetId"])
     }
 
     @Test
@@ -300,7 +306,9 @@ class UserManagementTest {
         assertEquals("auditedroles", TestEvents.fieldsOf(change)["userid"])
         assertEquals("OPERATOR", TestEvents.fieldsOf(change)["from"])
         assertEquals("TREASURER", TestEvents.fieldsOf(change)["to"])
-        assertEquals(AdminAction.USER_UPDATE, TestEvents.fieldsOf(changeEvents.single { it.message == "authz_admin" })["action"])
+        val adminAction = changeEvents.single { it.message == "authz_admin" }
+        assertEquals(AdminAction.USER_UPDATE, TestEvents.fieldsOf(adminAction)["action"])
+        assertEquals(userId.toLong(), TestEvents.fieldsOf(adminAction)["targetId"])
 
         val noChangeEvents = TestEvents.capture {
             mockMvc.perform(

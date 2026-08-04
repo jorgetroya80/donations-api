@@ -1,6 +1,7 @@
 package com.example.donations.infrastructure.events
 
 import org.slf4j.event.Level
+import java.math.BigDecimal
 
 /**
  * The closed set of events this application emits, named with the OWASP
@@ -51,10 +52,10 @@ data class AuthorizationFailed(val userid: String, val resource: String) : AppEv
     override val fields = mapOf("userid" to userid, "resource" to resource)
 }
 
-data class AdminAction(val userid: String, val action: String) : AppEvent {
+data class AdminAction(val userid: String, val action: String, val targetId: Long) : AppEvent {
     override val name = "authz_admin"
     override val level = Level.WARN
-    override val fields = mapOf("userid" to userid, "action" to action)
+    override val fields = mapOf("userid" to userid, "action" to action, "targetId" to targetId)
 
     /**
      * A closed vocabulary: this is the only free-text field in the event set, so
@@ -73,4 +74,17 @@ data class AuthorizationChanged(val userid: String, val from: String, val to: St
     override val name = "authz_change"
     override val level = Level.WARN
     override val fields = mapOf("userid" to userid, "from" to from, "to" to to)
+}
+
+// donorId is null for anonymous donations, which have no donor to identify.
+data class DonationCreated(val donationId: Long, val donorId: Long?, val amount: BigDecimal) : AppEvent {
+    override val name = "donation_create"
+    override val level = Level.INFO
+    override val fields = mapOf("donationId" to donationId, "donorId" to donorId, "amount" to amount)
+}
+
+data class DonationUpdated(val donationId: Long) : AppEvent {
+    override val name = "donation_update"
+    override val level = Level.INFO
+    override val fields = mapOf("donationId" to donationId)
 }

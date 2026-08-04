@@ -1,5 +1,6 @@
 package com.example.donations
 
+import ch.qos.logback.classic.Level
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -17,6 +18,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -335,6 +339,100 @@ class DonationRecordingTest {
             get("/api/v1/donations")
                 .session(treasurerSession)
         ).andExpect(status().isOk)
+    }
+
+    // --- Event tests ---
+
+    @Test
+    @DisplayName("Creating a donation emits donation_create with ids and amount")
+    fun createDonationEmitsEvent() {
+        var donationId = 0L
+        val events = TestEvents.capture {
+            donationId = createDonation(operatorSession, 100.00, "2026-01-15", "TITHE", "CASH", donorId)
+        }
+
+        val created = events.single { it.message == "donation_create" }
+        assertEquals(Level.INFO, created.level)
+        assertEquals(donationId, TestEvents.fieldsOf(created)["donationId"])
+        assertEquals(donorId, TestEvents.fieldsOf(created)["donorId"])
+        // Compared numerically: scale rides on how the request was serialised.
+        assertEquals(0, (TestEvents.fieldsOf(created)["amount"] as BigDecimal).compareTo(BigDecimal("100.00")))
+    }
+
+    @Test
+    @DisplayName("Updating a donation emits donation_update with the donation id")
+    fun updateDonationEmitsEvent() {
+        val donationId = createDonation(operatorSession, 100.00, "2026-01-15", "TITHE", "CASH", donorId)
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                put("/api/v1/donations/$donationId")
+                    .session(operatorSession)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"amount":250.00}""")
+            ).andExpect(status().isOk)
+        }
+
+        val updated = events.single { it.message == "donation_update" }
+        assertEquals(Level.INFO, updated.level)
+        // "actor" is added by EventLogger for every authenticated emission, so a
+        // domain event carries the operator's username too — see the note raised
+        // against ADR-005's "usernames are not attached to domain events".
+        assertEquals(
+            mapOf("event" to "donation_update", "donationId" to donationId, "actor" to "operator1"),
+            TestEvents.fieldsOf(updated),
+        )
+    }
+
+    /**
+     * An unconfirmed duplicate returns a warning without persisting anything, so
+     * there is no donation to report — emitting here would invent a record.
+     */
+    @Test
+    @DisplayName("Unconfirmed duplicate emits nothing; confirming it emits one donation_create")
+    fun duplicateDonationEmitsOnlyWhenSaved() {
+        createDonation(operatorSession, 100.00, "2026-01-15", "TITHE", "CASH", donorId)
+        val body = """{"amount":100.00,"donationDate":"2026-01-15","donationType":"TITHE","paymentMethod":"CASH","donorId":$donorId"""
+
+        val warned = TestEvents.capture {
+            mockMvc.perform(
+                post("/api/v1/donations")
+                    .session(operatorSession)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("$body}")
+            ).andExpect(status().isOk)
+        }
+        assertTrue(warned.none { it.message == "donation_create" })
+
+        val confirmed = TestEvents.capture {
+            mockMvc.perform(
+                post("/api/v1/donations")
+                    .session(operatorSession)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""$body,"confirmDuplicate":true}""")
+            ).andExpect(status().isCreated)
+        }
+        assertEquals(1, confirmed.count { it.message == "donation_create" })
+    }
+
+    @Test
+    @DisplayName("Listing and getting donations emit nothing")
+    fun readsEmitNothing() {
+        val donationId = createDonation(operatorSession, 100.00, "2026-01-15", "TITHE", "CASH", donorId)
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                get("/api/v1/donations")
+                    .session(operatorSession)
+            ).andExpect(status().isOk)
+
+            mockMvc.perform(
+                get("/api/v1/donations/$donationId")
+                    .session(operatorSession)
+            ).andExpect(status().isOk)
+        }
+
+        assertTrue(events.isEmpty(), "Reads must be silent, captured: ${events.map { it.message }}")
     }
 
     // --- Helpers ---

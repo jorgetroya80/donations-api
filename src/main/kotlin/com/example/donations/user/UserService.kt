@@ -42,7 +42,7 @@ class UserService(
             roles = request.roles,
         )
         val saved = userRepository.save(user)
-        eventLogger.emit(AdminAction(actingUser(), AdminAction.USER_CREATE))
+        eventLogger.emit(AdminAction(actingUser(), AdminAction.USER_CREATE, saved.id!!))
         return saved
     }
 
@@ -73,7 +73,7 @@ class UserService(
 
         val saved = userRepository.save(user)
         val action = if (request.password != null) AdminAction.PASSWORD_RESET else AdminAction.USER_UPDATE
-        eventLogger.emit(AdminAction(actingUser(), action))
+        eventLogger.emit(AdminAction(actingUser(), action, id))
         if (user.roles != previousRoles) {
             eventLogger.emit(AuthorizationChanged(user.username, describe(previousRoles), describe(user.roles)))
         }

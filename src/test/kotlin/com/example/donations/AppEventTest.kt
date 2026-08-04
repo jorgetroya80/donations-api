@@ -4,6 +4,8 @@ import com.example.donations.infrastructure.events.AccountLocked
 import com.example.donations.infrastructure.events.AdminAction
 import com.example.donations.infrastructure.events.AuthorizationChanged
 import com.example.donations.infrastructure.events.AuthorizationFailed
+import com.example.donations.infrastructure.events.DonationCreated
+import com.example.donations.infrastructure.events.DonationUpdated
 import com.example.donations.infrastructure.events.LoginFailed
 import com.example.donations.infrastructure.events.LoginSucceeded
 import com.example.donations.infrastructure.events.PasswordChangeFailed
@@ -11,6 +13,7 @@ import com.example.donations.infrastructure.events.PasswordChanged
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.slf4j.event.Level
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 @DisplayName("App Event Tests")
@@ -139,21 +142,21 @@ class AppEventTest {
     @Test
     @DisplayName("Admin action uses the OWASP event name")
     fun adminActionName() {
-        assertEquals("authz_admin", AdminAction("admin", AdminAction.USER_CREATE).name)
+        assertEquals("authz_admin", AdminAction("admin", AdminAction.USER_CREATE, 42).name)
     }
 
     @Test
     @DisplayName("Admin action is logged at WARN")
     fun adminActionLevel() {
-        assertEquals(Level.WARN, AdminAction("admin", AdminAction.USER_CREATE).level)
+        assertEquals(Level.WARN, AdminAction("admin", AdminAction.USER_CREATE, 42).level)
     }
 
     @Test
-    @DisplayName("Admin action carries the userid and a fixed action description")
+    @DisplayName("Admin action carries the acting admin, a fixed description and the target id")
     fun adminActionFields() {
         assertEquals(
-            mapOf("userid" to "admin", "action" to "user_create"),
-            AdminAction("admin", AdminAction.USER_CREATE).fields,
+            mapOf("userid" to "admin", "action" to "user_create", "targetId" to 42L),
+            AdminAction("admin", AdminAction.USER_CREATE, 42).fields,
         )
     }
 
@@ -185,5 +188,53 @@ class AppEventTest {
             mapOf("userid" to "operator1", "from" to "OPERATOR", "to" to "ADMIN"),
             AuthorizationChanged("operator1", "OPERATOR", "ADMIN").fields,
         )
+    }
+
+    @Test
+    @DisplayName("Donation create uses the noun_verb event name")
+    fun donationCreatedName() {
+        assertEquals("donation_create", DonationCreated(1, 2, BigDecimal("100.00")).name)
+    }
+
+    @Test
+    @DisplayName("Donation create is logged at INFO")
+    fun donationCreatedLevel() {
+        assertEquals(Level.INFO, DonationCreated(1, 2, BigDecimal("100.00")).level)
+    }
+
+    @Test
+    @DisplayName("Donation create carries ids and amount, and nothing donor-shaped")
+    fun donationCreatedFields() {
+        assertEquals(
+            mapOf("donationId" to 1L, "donorId" to 2L, "amount" to BigDecimal("100.00")),
+            DonationCreated(1, 2, BigDecimal("100.00")).fields,
+        )
+    }
+
+    @Test
+    @DisplayName("Donation create records a null donor id for an anonymous donation")
+    fun donationCreatedAnonymous() {
+        assertEquals(
+            mapOf("donationId" to 1L, "donorId" to null, "amount" to BigDecimal("50.00")),
+            DonationCreated(1, null, BigDecimal("50.00")).fields,
+        )
+    }
+
+    @Test
+    @DisplayName("Donation update uses the noun_verb event name")
+    fun donationUpdatedName() {
+        assertEquals("donation_update", DonationUpdated(1).name)
+    }
+
+    @Test
+    @DisplayName("Donation update is logged at INFO")
+    fun donationUpdatedLevel() {
+        assertEquals(Level.INFO, DonationUpdated(1).level)
+    }
+
+    @Test
+    @DisplayName("Donation update carries the donation id and nothing else")
+    fun donationUpdatedFields() {
+        assertEquals(mapOf("donationId" to 1L), DonationUpdated(1).fields)
     }
 }
