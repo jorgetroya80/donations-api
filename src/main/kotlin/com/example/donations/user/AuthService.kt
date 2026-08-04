@@ -1,6 +1,8 @@
 package com.example.donations.user
 
 import com.example.donations.infrastructure.config.PasswordChangeRequiredFilter
+import com.example.donations.infrastructure.events.EventLogger
+import com.example.donations.infrastructure.events.LoginSucceeded
 import com.example.donations.infrastructure.session.UserSessionTracker
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
@@ -18,6 +20,7 @@ class AuthService(
     private val loginAttemptService: LoginAttemptService,
     private val userRepository: UserRepository,
     private val userSessionTracker: UserSessionTracker,
+    private val eventLogger: EventLogger,
 ) {
 
     private val log = LoggerFactory.getLogger(AuthService::class.java)
@@ -38,6 +41,7 @@ class AuthService(
             throw ex
         }
         loginAttemptService.recordSuccess(request.username)
+        eventLogger.emit(LoginSucceeded(request.username))
         val context = SecurityContextHolder.createEmptyContext()
         context.authentication = authentication
         SecurityContextHolder.setContext(context)

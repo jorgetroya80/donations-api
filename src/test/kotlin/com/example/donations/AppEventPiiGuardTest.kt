@@ -1,0 +1,54 @@
+package com.example.donations
+
+import com.example.donations.infrastructure.events.AppEvent
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+import kotlin.reflect.KClass
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.primaryConstructor
+import kotlin.test.assertTrue
+
+@DisplayName("App Event PII Guard Tests")
+class AppEventPiiGuardTest {
+
+    private val forbidden = setOf(
+        "nationalId",
+        "dni",
+        "nie",
+        "address",
+        "email",
+        "phone",
+        "password",
+        "sessionId",
+        "donorName",
+        "fullName",
+        "firstName",
+        "lastName",
+        "iban",
+    ).map { it.lowercase() }.toSet()
+
+    // The interface's own members describe the event, not a person: "name" is the
+    // event name. Only members an event type declares itself are checked.
+    private val interfaceMembers = AppEvent::class.declaredMemberProperties.map { it.name }.toSet()
+
+    @Test
+    @DisplayName("No event type declares a field holding personal data")
+    fun noForbiddenFields() {
+        val eventTypes = allEventTypes(AppEvent::class)
+        assertTrue(eventTypes.isNotEmpty(), "expected at least one event type in the hierarchy")
+
+        eventTypes.forEach { type ->
+            val declared = type.declaredMemberProperties.map { it.name } +
+                (type.primaryConstructor?.parameters?.mapNotNull { it.name } ?: emptyList())
+            declared.filterNot { it in interfaceMembers }.forEach { fieldName ->
+                assertTrue(
+                    fieldName.lowercase() !in forbidden,
+                    "${type.simpleName} declares forbidden field '$fieldName'",
+                )
+            }
+        }
+    }
+
+    private fun allEventTypes(root: KClass<out AppEvent>): List<KClass<out AppEvent>> =
+        root.sealedSubclasses.flatMap { listOf(it) + allEventTypes(it) }
+}
