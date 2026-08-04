@@ -1,5 +1,8 @@
 package com.example.donations.infrastructure.error
 
+import com.example.donations.infrastructure.events.AuthorizationFailed
+import com.example.donations.infrastructure.events.EventLogger
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -7,12 +10,15 @@ import org.springframework.http.ProblemDetail
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.core.AuthenticationException
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
-class GlobalExceptionHandler {
+class GlobalExceptionHandler(
+    private val eventLogger: EventLogger,
+) {
 
     private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
@@ -37,8 +43,11 @@ class GlobalExceptionHandler {
         problem(HttpStatus.BAD_REQUEST, "Malformed request body")
 
     @ExceptionHandler(AccessDeniedException::class)
-    fun handleAccessDenied(ex: AccessDeniedException): ProblemDetail =
-        problem(HttpStatus.FORBIDDEN, "Access denied")
+    fun handleAccessDenied(ex: AccessDeniedException, request: HttpServletRequest): ProblemDetail {
+        val userid = SecurityContextHolder.getContext().authentication?.name ?: "anonymous"
+        eventLogger.emit(AuthorizationFailed(userid, request.requestURI))
+        return problem(HttpStatus.FORBIDDEN, "Access denied")
+    }
 
     @ExceptionHandler(AuthenticationException::class)
     fun handleAuthentication(ex: AuthenticationException): ProblemDetail =

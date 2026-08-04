@@ -1,11 +1,14 @@
 package com.example.donations.user
 
 import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.events.AdminAction
+import com.example.donations.infrastructure.events.AuthorizationChanged
 import com.example.donations.infrastructure.events.EventLogger
 import com.example.donations.infrastructure.events.PasswordChangeFailed
 import com.example.donations.infrastructure.events.PasswordChanged
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -38,12 +41,15 @@ class UserService(
             mustChangePassword = true,
             roles = request.roles,
         )
-        return userRepository.save(user)
+        val saved = userRepository.save(user)
+        eventLogger.emit(AdminAction(actingUser(), AdminAction.USER_CREATE))
+        return saved
     }
 
     @Transactional
     fun updateUser(id: Long, request: UpdateUserRequest): User {
         val user = getUser(id)
+        val previousRoles = user.roles
 
         request.username?.let { newUsername ->
             if (newUsername != user.username && userRepository.existsByUsername(newUsername)) {
@@ -65,7 +71,13 @@ class UserService(
             user.active = newActive
         }
 
-        return userRepository.save(user)
+        val saved = userRepository.save(user)
+        val action = if (request.password != null) AdminAction.PASSWORD_RESET else AdminAction.USER_UPDATE
+        eventLogger.emit(AdminAction(actingUser(), action))
+        if (user.roles != previousRoles) {
+            eventLogger.emit(AuthorizationChanged(user.username, describe(previousRoles), describe(user.roles)))
+        }
+        return saved
     }
 
     @Transactional
@@ -83,4 +95,9 @@ class UserService(
         userRepository.save(user)
         eventLogger.emit(PasswordChanged(username))
     }
+
+    private fun actingUser(): String =
+        SecurityContextHolder.getContext().authentication?.name ?: "system"
+
+    private fun describe(roles: Set<Role>): String = roles.map { it.name }.sorted().joinToString(",")
 }

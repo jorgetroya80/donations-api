@@ -43,3 +43,34 @@ data class PasswordChangeFailed(val userid: String) : AppEvent {
     override val level = Level.ERROR
     override val fields = mapOf("userid" to userid)
 }
+
+// OWASP marks this CRITICAL; SLF4J has no such level, so it maps to ERROR (ADR-005).
+data class AuthorizationFailed(val userid: String, val resource: String) : AppEvent {
+    override val name = "authz_fail"
+    override val level = Level.ERROR
+    override val fields = mapOf("userid" to userid, "resource" to resource)
+}
+
+data class AdminAction(val userid: String, val action: String) : AppEvent {
+    override val name = "authz_admin"
+    override val level = Level.WARN
+    override val fields = mapOf("userid" to userid, "action" to action)
+
+    /**
+     * A closed vocabulary: this is the only free-text field in the event set, so
+     * request data must never be interpolated into it (ADR-005). OWASP calls the
+     * field "event"; it is keyed "action" here because EventLogger already writes
+     * the event name under "event".
+     */
+    companion object {
+        const val USER_CREATE = "user_create"
+        const val USER_UPDATE = "user_update"
+        const val PASSWORD_RESET = "user_password_reset"
+    }
+}
+
+data class AuthorizationChanged(val userid: String, val from: String, val to: String) : AppEvent {
+    override val name = "authz_change"
+    override val level = Level.WARN
+    override val fields = mapOf("userid" to userid, "from" to from, "to" to to)
+}

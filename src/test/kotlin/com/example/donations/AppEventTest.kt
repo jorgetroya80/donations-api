@@ -1,6 +1,9 @@
 package com.example.donations
 
 import com.example.donations.infrastructure.events.AccountLocked
+import com.example.donations.infrastructure.events.AdminAction
+import com.example.donations.infrastructure.events.AuthorizationChanged
+import com.example.donations.infrastructure.events.AuthorizationFailed
 import com.example.donations.infrastructure.events.LoginFailed
 import com.example.donations.infrastructure.events.LoginSucceeded
 import com.example.donations.infrastructure.events.PasswordChangeFailed
@@ -110,5 +113,77 @@ class AppEventTest {
     @DisplayName("Password change failure carries the userid and nothing else")
     fun passwordChangeFailedFields() {
         assertEquals(mapOf("userid" to "admin"), PasswordChangeFailed("admin").fields)
+    }
+
+    @Test
+    @DisplayName("Authorization failure uses the OWASP event name")
+    fun authorizationFailedName() {
+        assertEquals("authz_fail", AuthorizationFailed("operator1", "/api/v1/users").name)
+    }
+
+    @Test
+    @DisplayName("Authorization failure is logged at ERROR (OWASP CRITICAL has no SLF4J level)")
+    fun authorizationFailedLevel() {
+        assertEquals(Level.ERROR, AuthorizationFailed("operator1", "/api/v1/users").level)
+    }
+
+    @Test
+    @DisplayName("Authorization failure carries the userid and requested resource")
+    fun authorizationFailedFields() {
+        assertEquals(
+            mapOf("userid" to "operator1", "resource" to "/api/v1/users"),
+            AuthorizationFailed("operator1", "/api/v1/users").fields,
+        )
+    }
+
+    @Test
+    @DisplayName("Admin action uses the OWASP event name")
+    fun adminActionName() {
+        assertEquals("authz_admin", AdminAction("admin", AdminAction.USER_CREATE).name)
+    }
+
+    @Test
+    @DisplayName("Admin action is logged at WARN")
+    fun adminActionLevel() {
+        assertEquals(Level.WARN, AdminAction("admin", AdminAction.USER_CREATE).level)
+    }
+
+    @Test
+    @DisplayName("Admin action carries the userid and a fixed action description")
+    fun adminActionFields() {
+        assertEquals(
+            mapOf("userid" to "admin", "action" to "user_create"),
+            AdminAction("admin", AdminAction.USER_CREATE).fields,
+        )
+    }
+
+    @Test
+    @DisplayName("Admin action descriptions are a closed set of short constants")
+    fun adminActionVocabulary() {
+        assertEquals(
+            listOf("user_create", "user_password_reset", "user_update"),
+            listOf(AdminAction.USER_CREATE, AdminAction.PASSWORD_RESET, AdminAction.USER_UPDATE).sorted(),
+        )
+    }
+
+    @Test
+    @DisplayName("Authorization change uses the OWASP event name")
+    fun authorizationChangedName() {
+        assertEquals("authz_change", AuthorizationChanged("operator1", "OPERATOR", "ADMIN").name)
+    }
+
+    @Test
+    @DisplayName("Authorization change is logged at WARN")
+    fun authorizationChangedLevel() {
+        assertEquals(Level.WARN, AuthorizationChanged("operator1", "OPERATOR", "ADMIN").level)
+    }
+
+    @Test
+    @DisplayName("Authorization change carries the userid and both privilege levels")
+    fun authorizationChangedFields() {
+        assertEquals(
+            mapOf("userid" to "operator1", "from" to "OPERATOR", "to" to "ADMIN"),
+            AuthorizationChanged("operator1", "OPERATOR", "ADMIN").fields,
+        )
     }
 }

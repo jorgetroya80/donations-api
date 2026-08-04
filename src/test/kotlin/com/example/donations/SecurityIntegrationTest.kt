@@ -3,12 +3,8 @@ package com.example.donations
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.read.ListAppender
 import com.example.donations.infrastructure.events.RequestIdFilter
 import com.example.donations.user.LoginAttemptService
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -407,7 +403,7 @@ class SecurityIntegrationTest {
     @Test
     @DisplayName("Failed logins emit one fail event each, a single lock, then locked=true")
     fun failedLoginsEmitAuthenticationEvents() {
-        val events = captureEvents {
+        val events = TestEvents.capture {
             repeat(LoginAttemptService.MAX_FAILURES + 1) {
                 mockMvc.perform(
                     post("/api/v1/login")
@@ -422,9 +418,9 @@ class SecurityIntegrationTest {
         assertEquals(1, events.count { it.message == "authn_login_lock" })
         assertEquals(
             List(LoginAttemptService.MAX_FAILURES) { false } + true,
-            fails.map { fieldsOf(it)["locked"] },
+            fails.map { TestEvents.fieldsOf(it)["locked"] },
         )
-        assertEquals("127.0.0.1", fieldsOf(fails.first())["sourceIp"])
+        assertEquals("127.0.0.1", TestEvents.fieldsOf(fails.first())["sourceIp"])
         assertTrue(events.none { it.message == "authn_login_fail_max" })
     }
 
@@ -439,7 +435,7 @@ class SecurityIntegrationTest {
     fun passwordChangeEmitsEvents() {
         val session = extractSession(login("admin", "admin"))
 
-        val events = captureEvents {
+        val events = TestEvents.capture {
             mockMvc.perform(
                 put("/api/v1/users/me/password")
                     .session(session)
@@ -457,28 +453,58 @@ class SecurityIntegrationTest {
 
         val failed = events.single { it.message == "authn_password_change_fail" }
         assertEquals(Level.ERROR, failed.level)
-        assertEquals("admin", fieldsOf(failed)["userid"])
+        assertEquals("admin", TestEvents.fieldsOf(failed)["userid"])
 
         val changed = events.single { it.message == "authn_password_change" }
         assertEquals(Level.INFO, changed.level)
-        assertEquals("admin", fieldsOf(changed)["userid"])
+        assertEquals("admin", TestEvents.fieldsOf(changed)["userid"])
     }
 
-    private fun captureEvents(block: () -> Unit): List<ILoggingEvent> {
-        val eventsLogger = LoggerFactory.getLogger("com.example.donations.events") as Logger
-        val appender = ListAppender<ILoggingEvent>()
-        appender.start()
-        eventsLogger.addAppender(appender)
-        try {
-            block()
-        } finally {
-            eventsLogger.detachAppender(appender)
-            appender.stop()
+    /**
+     * A role denial is a privilege decision, so it carries the acting user and
+     * the resource they were refused — the pair that makes probing visible.
+     */
+    @Test
+    @DisplayName("Role denial emits authz_fail with the acting user and requested resource")
+    fun roleDenialEmitsAuthorizationFailure() {
+        val adminSession = loginAsAdmin()
+        createUser(adminSession, "operator1", "password123", "OPERATOR")
+        val operatorSession = TestAuth.loginActivated(mockMvc, "operator1", "password123")
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                get("/api/v1/users")
+                    .session(operatorSession)
+            ).andExpect(status().isForbidden)
         }
-        return appender.list.toList()
+
+        val denial = events.single { it.message == "authz_fail" }
+        assertEquals(Level.ERROR, denial.level)
+        assertEquals("operator1", TestEvents.fieldsOf(denial)["userid"])
+        assertEquals("/api/v1/users", TestEvents.fieldsOf(denial)["resource"])
     }
 
-    private fun fieldsOf(event: ILoggingEvent) = event.keyValuePairs.associate { it.key to it.value }
+    /**
+     * The must-change-password 403 is a workflow gate, not a privilege denial:
+     * the user is entitled to the resource once they rotate their password.
+     * Emitting authz_fail here would swamp the signal it exists to carry.
+     */
+    @Test
+    @DisplayName("Password-change gate 403 emits no authz_fail")
+    fun passwordChangeGateEmitsNoAuthorizationFailure() {
+        val session = extractSession(login("admin", "admin"))
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                get("/api/v1/users")
+                    .session(session)
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
+        }
+
+        assertTrue(events.none { it.message == "authz_fail" })
+    }
 
     /**
      * Proves RequestIdFilter is a container-level filter, not a member of the

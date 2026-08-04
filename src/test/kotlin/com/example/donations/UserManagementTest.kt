@@ -1,5 +1,7 @@
 package com.example.donations
 
+import ch.qos.logback.classic.Level
+import com.example.donations.infrastructure.events.AdminAction
 import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -18,6 +20,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -244,5 +248,70 @@ class UserManagementTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"username":"resetpw","password":"brandnewpw1"}""")
         ).andExpect(status().isOk)
+    }
+
+    // --- Authorization events ---
+
+    @Test
+    @DisplayName("Admin creating a user emits one authz_admin")
+    fun createUserEmitsAdminAction() {
+        val events = TestEvents.capture { createUser("auditedcreate") }
+
+        val action = events.single { it.message == "authz_admin" }
+        assertEquals(Level.WARN, action.level)
+        assertEquals("admin", TestEvents.fieldsOf(action)["userid"])
+        assertEquals(AdminAction.USER_CREATE, TestEvents.fieldsOf(action)["action"])
+    }
+
+    @Test
+    @DisplayName("Admin resetting a password emits authz_admin distinct from an ordinary update")
+    fun passwordResetEmitsDistinctAdminAction() {
+        val userId = extractId(createUser("auditedreset").response.contentAsString)
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                put("/api/v1/users/$userId")
+                    .session(adminSession)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"password":"brandnewpw1"}""")
+            ).andExpect(status().isOk)
+        }
+
+        val action = events.single { it.message == "authz_admin" }
+        assertEquals(AdminAction.PASSWORD_RESET, TestEvents.fieldsOf(action)["action"])
+    }
+
+    @Test
+    @DisplayName("Role change emits authz_change; an update leaving the role alone does not")
+    fun roleChangeEmitsAuthorizationChange() {
+        val userId = extractId(createUser("auditedroles").response.contentAsString)
+
+        val changeEvents = TestEvents.capture {
+            mockMvc.perform(
+                put("/api/v1/users/$userId")
+                    .session(adminSession)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"roles":["TREASURER"]}""")
+            ).andExpect(status().isOk)
+        }
+
+        val change = changeEvents.single { it.message == "authz_change" }
+        assertEquals(Level.WARN, change.level)
+        assertEquals("auditedroles", TestEvents.fieldsOf(change)["userid"])
+        assertEquals("OPERATOR", TestEvents.fieldsOf(change)["from"])
+        assertEquals("TREASURER", TestEvents.fieldsOf(change)["to"])
+        assertEquals(AdminAction.USER_UPDATE, TestEvents.fieldsOf(changeEvents.single { it.message == "authz_admin" })["action"])
+
+        val noChangeEvents = TestEvents.capture {
+            mockMvc.perform(
+                put("/api/v1/users/$userId")
+                    .session(adminSession)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"roles":["TREASURER"],"active":false}""")
+            ).andExpect(status().isOk)
+        }
+
+        assertTrue(noChangeEvents.none { it.message == "authz_change" })
+        assertEquals(1, noChangeEvents.count { it.message == "authz_admin" })
     }
 }
