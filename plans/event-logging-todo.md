@@ -19,10 +19,11 @@ Nothing blocked. Login-failure event mapping resolved in the plan (three moments
   - **Open for Jorge:** `authz_admin` does not identify *who* was created/updated — only the acting admin. Adding a `targetId` field would close it. See plan → Phase 2 note.
 
 ## Phase 3: Domain Events
-- [ ] Task 7: `donation_create` / `donation_update`
-- [ ] Task 8: `donor_create` / `donor_update` (highest PII risk)
-- [ ] Task 9: `expense_create` / `expense_update`
-- [ ] CHECKPOINT 3: full tests green, catalogue matches ADR-005, report to Jorge
+- [x] Task 7: `donation_create` / `donation_update` (+ `targetId` amendment to `authz_admin`)
+- [x] Task 8: `donor_create` / `donor_update` (highest PII risk)
+- [x] Task 9: `expense_create` / `expense_update`
+- [x] CHECKPOINT 3: full tests green, catalogue matches ADR-005, report to Jorge
+  - ADR-005 amended mid-phase: `actor` permitted on all events (implementation contradicted the original wording).
 
 ## Phase 4: Error Path & Close-out
 - [ ] Task 10: `error_unexpected` (keep stacktrace)
