@@ -93,16 +93,19 @@ class DeployPortBindingTest {
     }
 
     /**
-     * The readable pattern prints message, logger and thread and drops MDC, so
-     * without this the correlation id is invisible in dev — exactly where the
-     * "find the id, pull every event from that request" workflow is first used.
+     * The readable pattern prints message, logger and thread and drops both MDC
+     * and key-values, so without this the correlation id is invisible in dev —
+     * exactly where the "find the id, pull every event from that request"
+     * workflow is first used — and an event shows its name but not its fields.
      * The :- default keeps startup and shutdown lines, logged outside any
-     * request, from rendering a stray marker.
+     * request, from rendering a stray marker. %kvp is deliberately carried in
+     * the correlation slot: the tidy alternative is owning a full copy of Boot's
+     * console pattern across upgrades, which costs more than it returns.
      */
     @Test
     @DisplayName("correlation pattern surfaces the request id in the readable output")
     fun correlationPatternIncludesRequestId() {
-        assertEquals("[%X{requestId:-}] ", environment.getProperty("logging.pattern.correlation"))
+        assertEquals("[%X{requestId:-}] %kvp ", environment.getProperty("logging.pattern.correlation"))
     }
 }
 

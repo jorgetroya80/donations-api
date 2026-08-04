@@ -34,7 +34,11 @@ management:
         enabled: true   # exposes /actuator/health/liveness (livenessState only, no DB)
 logging:
   pattern:
-    correlation: "[%X{requestId:-}] "   # readable pattern drops MDC otherwise; prod uses JSON instead
+    # Boot's readable pattern drops both MDC and key-values, which would leave dev
+    # showing an event's name but not what it says. This slot is documented for the
+    # correlation id; %kvp rides along so event fields are visible too. Prod ignores
+    # the pattern entirely and emits JSON instead.
+    correlation: "[%X{requestId:-}] %kvp "
 
 ---
 spring:
