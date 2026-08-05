@@ -2,12 +2,16 @@ package com.example.donations
 
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import ch.qos.logback.classic.Level
+import com.example.donations.infrastructure.events.RequestIdFilter
+import com.example.donations.user.LoginAttemptService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpSession
+import org.springframework.security.web.FilterChainProxy
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
@@ -17,6 +21,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -27,6 +33,9 @@ class SecurityIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
+
+    @Autowired
+    private lateinit var filterChainProxy: FilterChainProxy
 
     private fun login(username: String, password: String): MvcResult {
         return mockMvc.perform(
@@ -62,6 +71,34 @@ class SecurityIntegrationTest {
             .andExpect(jsonPath("$.title").value("Unauthorized"))
             .andExpect(jsonPath("$.detail").value("Authentication required"))
             .andExpect(jsonPath("$.instance").value("/api/v1/users"))
+    }
+
+    /**
+     * The filter-chain 401 builds its own ProblemDetail (ADR-004), so it has to
+     * carry the correlation id explicitly — otherwise "I keep getting 401" is
+     * the one report that hands the operator nothing to search on.
+     */
+    @Test
+    @DisplayName("The 401 body carries a correlation id")
+    fun unauthenticatedResponseCarriesRequestId() {
+        mockMvc.perform(get("/api/v1/users"))
+            .andExpect(status().isUnauthorized)
+            .andExpect(jsonPath("$.requestId").isNotEmpty)
+    }
+
+    /** Same reasoning for the other hand-built ProblemDetail, the workflow gate. */
+    @Test
+    @DisplayName("The password-gate 403 body carries a correlation id")
+    fun passwordGateResponseCarriesRequestId() {
+        val session = extractSession(login("admin", "admin"))
+
+        mockMvc.perform(
+            get("/api/v1/users")
+                .session(session)
+        )
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
+            .andExpect(jsonPath("$.requestId").isNotEmpty)
     }
 
     @Test
@@ -382,6 +419,137 @@ class SecurityIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"username":"todeactivate","password":"password123"}""")
         ).andExpect(status().isUnauthorized)
+    }
+
+    /**
+     * The fail events are emitted by AuthService, which only runs on the real
+     * login path, so this is asserted here rather than in AuthEventTest. Five
+     * rejections and the attempt against the now-locked account each produce one
+     * authn_login_fail; the locked flag is what distinguishes the last one, and
+     * no second lock event is emitted for it (ADR-005).
+     */
+    @Test
+    @DisplayName("Failed logins emit one fail event each, a single lock, then locked=true")
+    fun failedLoginsEmitAuthenticationEvents() {
+        val events = TestEvents.capture {
+            repeat(LoginAttemptService.MAX_FAILURES + 1) {
+                mockMvc.perform(
+                    post("/api/v1/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""{"username":"admin","password":"wrongpassword"}""")
+                ).andExpect(status().isUnauthorized)
+            }
+        }
+
+        val fails = events.filter { it.message == "authn_login_fail" }
+        assertEquals(LoginAttemptService.MAX_FAILURES + 1, fails.size)
+        assertEquals(1, events.count { it.message == "authn_login_lock" })
+        assertEquals(
+            List(LoginAttemptService.MAX_FAILURES) { false } + true,
+            fails.map { TestEvents.fieldsOf(it)["locked"] },
+        )
+        assertEquals("127.0.0.1", TestEvents.fieldsOf(fails.first())["sourceIp"])
+        assertTrue(events.none { it.message == "authn_login_fail_max" })
+    }
+
+    /**
+     * Password-change events fire only on the self-service path in UserService,
+     * so a real request is what exercises them. The failure is ERROR rather than
+     * WARN because it means someone authenticated and then failed a second check
+     * (ADR-005 maps OWASP's CRITICAL to ERROR).
+     */
+    @Test
+    @DisplayName("Self-service password change emits a change event, a wrong current password an ERROR")
+    fun passwordChangeEmitsEvents() {
+        val session = extractSession(login("admin", "admin"))
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                put("/api/v1/users/me/password")
+                    .session(session)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"currentPassword":"wrongcurrent","newPassword":"newpassword1"}""")
+            ).andExpect(status().isBadRequest)
+
+            mockMvc.perform(
+                put("/api/v1/users/me/password")
+                    .session(session)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"currentPassword":"admin","newPassword":"newpassword1"}""")
+            ).andExpect(status().isNoContent)
+        }
+
+        val failed = events.single { it.message == "authn_password_change_fail" }
+        assertEquals(Level.ERROR, failed.level)
+        assertEquals("admin", TestEvents.fieldsOf(failed)["userid"])
+
+        val changed = events.single { it.message == "authn_password_change" }
+        assertEquals(Level.INFO, changed.level)
+        assertEquals("admin", TestEvents.fieldsOf(changed)["userid"])
+    }
+
+    /**
+     * A role denial is a privilege decision, so it carries the acting user and
+     * the resource they were refused — the pair that makes probing visible.
+     */
+    @Test
+    @DisplayName("Role denial emits authz_fail with the acting user and requested resource")
+    fun roleDenialEmitsAuthorizationFailure() {
+        val adminSession = loginAsAdmin()
+        createUser(adminSession, "operator1", "password123", "OPERATOR")
+        val operatorSession = TestAuth.loginActivated(mockMvc, "operator1", "password123")
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                get("/api/v1/users")
+                    .session(operatorSession)
+            ).andExpect(status().isForbidden)
+        }
+
+        val denial = events.single { it.message == "authz_fail" }
+        assertEquals(Level.ERROR, denial.level)
+        assertEquals("operator1", TestEvents.fieldsOf(denial)["userid"])
+        assertEquals("/api/v1/users", TestEvents.fieldsOf(denial)["resource"])
+    }
+
+    /**
+     * The must-change-password 403 is a workflow gate, not a privilege denial:
+     * the user is entitled to the resource once they rotate their password.
+     * Emitting authz_fail here would swamp the signal it exists to carry.
+     */
+    @Test
+    @DisplayName("Password-change gate 403 emits no authz_fail")
+    fun passwordChangeGateEmitsNoAuthorizationFailure() {
+        val session = extractSession(login("admin", "admin"))
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                get("/api/v1/users")
+                    .session(session)
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
+        }
+
+        assertTrue(events.none { it.message == "authz_fail" })
+    }
+
+    /**
+     * Proves RequestIdFilter is a container-level filter, not a member of the
+     * security chain, so its @Order applies relative to the chain as a whole.
+     * That plus the HIGHEST_PRECEDENCE assertion in RequestIdFilterTest is what
+     * places it first; neither test observes the resolved ordering directly.
+     */
+    @Test
+    @DisplayName("Request id filter is registered outside the security filter chain")
+    fun requestIdFilterIsNotInSecurityChain() {
+        val securityFilters = filterChainProxy.filterChains.flatMap { it.filters }
+
+        assertTrue(securityFilters.isNotEmpty(), "Expected a populated security filter chain")
+        assertTrue(
+            securityFilters.none { it is RequestIdFilter },
+            "RequestIdFilter must run ahead of the security chain, not inside it",
+        )
     }
 
     private fun extractId(json: String): String {

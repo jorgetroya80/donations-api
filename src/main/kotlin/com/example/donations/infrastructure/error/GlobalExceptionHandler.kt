@@ -1,18 +1,27 @@
 package com.example.donations.infrastructure.error
 
+import com.example.donations.infrastructure.events.AuthorizationFailed
+import com.example.donations.infrastructure.events.EventLogger
+import com.example.donations.infrastructure.events.RequestIdFilter
+import com.example.donations.infrastructure.events.UnexpectedError
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.core.AuthenticationException
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
-class GlobalExceptionHandler {
+class GlobalExceptionHandler(
+    private val eventLogger: EventLogger,
+) {
 
     private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
@@ -37,8 +46,15 @@ class GlobalExceptionHandler {
         problem(HttpStatus.BAD_REQUEST, "Malformed request body")
 
     @ExceptionHandler(AccessDeniedException::class)
-    fun handleAccessDenied(ex: AccessDeniedException): ProblemDetail =
-        problem(HttpStatus.FORBIDDEN, "Access denied")
+    fun handleAccessDenied(ex: AccessDeniedException, request: HttpServletRequest): ProblemDetail {
+        // Unauthenticated callers are rejected with a 401 before reaching a
+        // handler, so the fallback is all but unreachable; it uses Spring's own
+        // principal name so the value is still correct if it ever fires.
+        val userid = SecurityContextHolder.getContext().authentication?.name
+            ?: EventLogger.ANONYMOUS_PRINCIPAL
+        eventLogger.emit(AuthorizationFailed(userid, request.requestURI))
+        return problem(HttpStatus.FORBIDDEN, "Access denied")
+    }
 
     @ExceptionHandler(AuthenticationException::class)
     fun handleAuthentication(ex: AuthenticationException): ProblemDetail =
@@ -57,8 +73,9 @@ class GlobalExceptionHandler {
         problem(HttpStatus.BAD_REQUEST, ex.message ?: "Bad request")
 
     @ExceptionHandler(Exception::class)
-    fun handleAll(ex: Exception): ProblemDetail {
+    fun handleAll(ex: Exception, request: HttpServletRequest): ProblemDetail {
         log.error("Unexpected error", ex)
+        eventLogger.emit(UnexpectedError(ex.javaClass.name, request.requestURI))
         return problem(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error")
     }
 
@@ -72,6 +89,9 @@ class GlobalExceptionHandler {
         if (fields != null) {
             problemDetail.setProperty("fields", fields)
         }
+        // Extension property, per ADR-004's pattern: gives the caller the one
+        // value needed to recover every event from their failed request.
+        MDC.get(RequestIdFilter.REQUEST_ID)?.let { problemDetail.setProperty("requestId", it) }
         return problemDetail
     }
 }

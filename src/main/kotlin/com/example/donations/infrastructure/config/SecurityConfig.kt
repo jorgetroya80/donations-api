@@ -1,6 +1,8 @@
 package com.example.donations.infrastructure.config
 
+import com.example.donations.infrastructure.events.RequestIdFilter
 import jakarta.servlet.http.HttpServletResponse
+import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -34,6 +36,11 @@ class SecurityConfig(
     fun securityFilterChain(http: HttpSecurity, objectMapper: ObjectMapper): SecurityFilterChain = http
         .csrf { it.disable() }
         .apply { if (corsEnabled) cors(Customizer.withDefaults()) else cors { it.disable() } }
+        // Role rules belong in @PreAuthorize on the controller, not in a matcher
+        // here. A denial from method security is thrown during handler invocation
+        // and reaches GlobalExceptionHandler, which emits authz_fail; a denial
+        // from a matcher happens in the filter chain, never reaches the advice,
+        // and the event silently stops firing for that path with no test failing.
         .authorizeHttpRequests { auth ->
             auth
                 .requestMatchers("/api/v1/login").permitAll()
@@ -53,6 +60,7 @@ class SecurityConfig(
                 val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Authentication required")
                 problem.title = HttpStatus.UNAUTHORIZED.reasonPhrase
                 problem.instance = URI.create(request.requestURI)
+                MDC.get(RequestIdFilter.REQUEST_ID)?.let { problem.setProperty("requestId", it) }
                 response.status = HttpServletResponse.SC_UNAUTHORIZED
                 response.characterEncoding = Charsets.UTF_8.name()
                 response.contentType = MediaType.APPLICATION_PROBLEM_JSON_VALUE

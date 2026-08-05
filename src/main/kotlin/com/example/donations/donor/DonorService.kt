@@ -1,6 +1,9 @@
 package com.example.donations.donor
 
 import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.events.DonorCreated
+import com.example.donations.infrastructure.events.DonorUpdated
+import com.example.donations.infrastructure.events.EventLogger
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -9,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class DonorService(
     private val donorRepository: DonorRepository,
+    private val eventLogger: EventLogger,
 ) {
 
     @Transactional(readOnly = true)
@@ -41,7 +45,9 @@ class DonorService(
             address = request.address,
         )
 
-        return donorRepository.save(donor)
+        val saved = donorRepository.save(donor)
+        eventLogger.emit(DonorCreated(saved.id!!))
+        return saved
     }
 
     @Transactional
@@ -62,6 +68,8 @@ class DonorService(
         request.address?.let { donor.address = it }
         request.active?.let { donor.active = it }
 
-        return donorRepository.save(donor)
+        val saved = donorRepository.save(donor)
+        eventLogger.emit(DonorUpdated(id))
+        return saved
     }
 }

@@ -1,8 +1,10 @@
 package com.example.donations.infrastructure.config
 
+import com.example.donations.infrastructure.events.RequestIdFilter
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.slf4j.MDC
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
@@ -35,6 +37,7 @@ class PasswordChangeRequiredFilter(
             problem.title = HttpStatus.FORBIDDEN.reasonPhrase
             problem.instance = URI.create(request.requestURI)
             problem.setProperty("code", "PASSWORD_CHANGE_REQUIRED")
+            MDC.get(RequestIdFilter.REQUEST_ID)?.let { problem.setProperty("requestId", it) }
             response.status = HttpServletResponse.SC_FORBIDDEN
             response.characterEncoding = Charsets.UTF_8.name()
             response.contentType = MediaType.APPLICATION_PROBLEM_JSON_VALUE

@@ -2,6 +2,9 @@ package com.example.donations.expense
 
 import com.example.donations.infrastructure.defaultYearRange
 import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.events.EventLogger
+import com.example.donations.infrastructure.events.ExpenseCreated
+import com.example.donations.infrastructure.events.ExpenseUpdated
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -12,6 +15,7 @@ import java.time.LocalDate
 @Transactional(readOnly = true)
 class ExpenseService(
     private val expenseRepository: ExpenseRepository,
+    private val eventLogger: EventLogger,
 ) {
 
     fun listExpenses(pageable: Pageable, from: LocalDate?, to: LocalDate?): Page<Expense> {
@@ -34,7 +38,9 @@ class ExpenseService(
             vendor = request.vendor,
             paymentMethod = request.paymentMethod!!,
         )
-        return expenseRepository.save(expense)
+        val saved = expenseRepository.save(expense)
+        eventLogger.emit(ExpenseCreated(saved.id!!, saved.amount, saved.category))
+        return saved
     }
 
     @Transactional
@@ -49,6 +55,8 @@ class ExpenseService(
         request.vendor?.let { expense.vendor = it }
         request.paymentMethod?.let { expense.paymentMethod = it }
 
-        return expenseRepository.save(expense)
+        val saved = expenseRepository.save(expense)
+        eventLogger.emit(ExpenseUpdated(id))
+        return saved
     }
 }

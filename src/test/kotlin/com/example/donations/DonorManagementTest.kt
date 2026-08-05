@@ -1,5 +1,7 @@
 package com.example.donations
 
+import ch.qos.logback.classic.Level
+import com.example.donations.infrastructure.events.RequestIdFilter
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -17,6 +19,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -434,4 +438,136 @@ class DonorManagementTest {
                 .session(treasurerSession)
         ).andExpect(status().isOk)
     }
+
+    // --- Event tests ---
+
+    /**
+     * The donor aggregate is exactly what ADR-005 forbids logging, so these
+     * assertions check the whole emission, not just the id: any donor field that
+     * ever leaked into an event would show up as an extra key here.
+     */
+    @Test
+    @DisplayName("Creating a donor emits donor_create carrying the id only")
+    fun createDonorEmitsEvent() {
+        lateinit var result: MvcResult
+        val events = TestEvents.capture {
+            result = createDonor(operatorSession, "Juan Garcia", "12345678Z")
+        }
+        val donorId = extractId(result.response.contentAsString)
+
+        val created = events.single { it.message == "donor_create" }
+        assertEquals(Level.INFO, created.level)
+        assertEquals(
+            mapOf("event" to "donor_create", "donorId" to donorId, "actor" to "operator"),
+            TestEvents.fieldsOf(created),
+        )
+    }
+
+    @Test
+    @DisplayName("Updating a donor emits donor_update carrying the id only")
+    fun updateDonorEmitsEvent() {
+        val donorId = extractId(createDonor(operatorSession, "Juan Garcia", "12345678Z").response.contentAsString)
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                put("/api/v1/donors/$donorId")
+                    .session(operatorSession)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"fullName":"Juan Garcia Lopez","email":"juan@example.com"}""")
+            ).andExpect(status().isOk)
+        }
+
+        val updated = events.single { it.message == "donor_update" }
+        assertEquals(Level.INFO, updated.level)
+        assertEquals(
+            mapOf("event" to "donor_update", "donorId" to donorId, "actor" to "operator"),
+            TestEvents.fieldsOf(updated),
+        )
+    }
+
+    @Test
+    @DisplayName("Listing, searching and getting donors emit nothing")
+    fun readsEmitNothing() {
+        val donorId = extractId(createDonor(operatorSession, "Maria Lopez", "X1234567L").response.contentAsString)
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                get("/api/v1/donors")
+                    .session(operatorSession)
+            ).andExpect(status().isOk)
+
+            // A search term is user-supplied text about a person: it must not
+            // reach the log by any route.
+            mockMvc.perform(
+                get("/api/v1/donors")
+                    .session(operatorSession)
+                    .param("search", "Maria")
+            ).andExpect(status().isOk)
+
+            mockMvc.perform(
+                get("/api/v1/donors/$donorId")
+                    .session(operatorSession)
+            ).andExpect(status().isOk)
+        }
+
+        assertTrue(events.isEmpty(), "Reads must be silent, captured: ${events.map { it.message }}")
+    }
+
+    /**
+     * The correlation id is only useful if the user's error response and the log
+     * carry the same one — that match is what turns "it broke" into a query.
+     */
+    @Test
+    @DisplayName("Unexpected error emits error_unexpected carrying the response's requestId")
+    fun unexpectedErrorEmitsCorrelatedEvent() {
+        lateinit var body: String
+        val events = TestEvents.capture {
+            body = mockMvc.perform(
+                // Query string in the URL, not .param(): only this populates
+                // getQueryString(), so the path-only assertion below proves the
+                // search term cannot reach the log via "resource".
+                get("/api/v1/donors?sort=noSuchProperty")
+                    .session(operatorSession)
+            )
+                .andExpect(status().isInternalServerError)
+                .andReturn().response.contentAsString
+        }
+
+        val event = events.single { it.message == "error_unexpected" }
+        assertEquals(Level.ERROR, event.level)
+
+        val responseRequestId = extractRequestId(body)
+        assertTrue(responseRequestId.isNotBlank())
+        assertEquals(
+            mapOf(
+                "event" to "error_unexpected",
+                "exceptionType" to "org.springframework.data.core.PropertyReferenceException",
+                "resource" to "/api/v1/donors",
+                "actor" to "operator",
+            ),
+            TestEvents.fieldsOf(event),
+        )
+        // The correlation lives in MDC, not in a field: declaring it as a field
+        // makes the structured formatter drop the whole line in prod.
+        assertEquals(responseRequestId, event.mdcPropertyMap[RequestIdFilter.REQUEST_ID])
+    }
+
+    @Test
+    @DisplayName("A 4xx response also carries the correlation id")
+    fun validationErrorCarriesRequestId() {
+        val body = mockMvc.perform(
+            post("/api/v1/donors")
+                .session(operatorSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"fullName":"","nationalId":"12345678Z"}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andReturn().response.contentAsString
+
+        assertTrue(extractRequestId(body).isNotBlank())
+    }
+
+    private fun extractRequestId(responseBody: String): String =
+        """"requestId"\s*:\s*"([^"]+)"""".toRegex().find(responseBody)?.groupValues?.get(1)
+            ?: throw AssertionError("No requestId in response: $responseBody")
 }

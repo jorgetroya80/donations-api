@@ -1,5 +1,6 @@
 package com.example.donations
 
+import ch.qos.logback.classic.Level
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -17,6 +18,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -279,6 +283,66 @@ class ExpenseRecordingTest {
             get("/api/v1/expenses")
                 .session(treasurerSession)
         ).andExpect(status().isOk)
+    }
+
+    // --- Event tests ---
+
+    @Test
+    @DisplayName("Creating an expense emits expense_create with id, amount and category")
+    fun createExpenseEmitsEvent() {
+        var expenseId = 0L
+        val events = TestEvents.capture {
+            expenseId = createExpense(operatorSession, 40.00, "2026-01-15", "SUPPLIES", "Paper", "CASH")
+        }
+
+        val created = events.single { it.message == "expense_create" }
+        assertEquals(Level.INFO, created.level)
+        assertEquals(expenseId, TestEvents.fieldsOf(created)["expenseId"])
+        assertEquals("SUPPLIES", TestEvents.fieldsOf(created)["category"])
+        // Compared numerically: scale rides on how the request was serialised.
+        assertEquals(0, (TestEvents.fieldsOf(created)["amount"] as BigDecimal).compareTo(BigDecimal("40.00")))
+    }
+
+    @Test
+    @DisplayName("Updating an expense emits expense_update with the expense id")
+    fun updateExpenseEmitsEvent() {
+        val expenseId = createExpense(operatorSession, 40.00, "2026-01-15", "SUPPLIES", "Paper", "CASH")
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                put("/api/v1/expenses/$expenseId")
+                    .session(operatorSession)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"amount":250.00}""")
+            ).andExpect(status().isOk)
+        }
+
+        val updated = events.single { it.message == "expense_update" }
+        assertEquals(Level.INFO, updated.level)
+        assertEquals(
+            mapOf("event" to "expense_update", "expenseId" to expenseId, "actor" to "operator1"),
+            TestEvents.fieldsOf(updated),
+        )
+    }
+
+    @Test
+    @DisplayName("Listing and getting expenses emit nothing")
+    fun readsEmitNothing() {
+        val expenseId = createExpense(operatorSession, 40.00, "2026-01-15", "SUPPLIES", "Paper", "CASH")
+
+        val events = TestEvents.capture {
+            mockMvc.perform(
+                get("/api/v1/expenses")
+                    .session(operatorSession)
+            ).andExpect(status().isOk)
+
+            mockMvc.perform(
+                get("/api/v1/expenses/$expenseId")
+                    .session(operatorSession)
+            ).andExpect(status().isOk)
+        }
+
+        assertTrue(events.isEmpty(), "Reads must be silent, captured: ${events.map { it.message }}")
     }
 
     // --- Helpers ---

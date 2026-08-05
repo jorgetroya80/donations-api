@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /**
  * Guards the Render deploy configuration (plans/deploy-render.md):
@@ -28,6 +29,9 @@ class DeployProdConfigTest {
     @Autowired
     private lateinit var serverProperties: ServerProperties
 
+    @Autowired
+    private lateinit var environment: Environment
+
     @Test
     @DisplayName("prod honors forwarded headers (Render edge terminates TLS)")
     fun prodUsesFrameworkForwardHeadersStrategy() {
@@ -35,6 +39,20 @@ class DeployProdConfigTest {
             ServerProperties.ForwardHeadersStrategy.FRAMEWORK,
             serverProperties.forwardHeadersStrategy,
         )
+    }
+
+    /**
+     * Events are only useful if something can read them: prod emits ECS JSON on
+     * stdout so every field, including the MDC correlation id, stays a queryable
+     * key instead of being flattened into a message string (ADR-005). ECS is a
+     * published schema, so adopting a log platform later is this one property,
+     * not reinstrumentation. The dev half of the split — the readable pattern —
+     * is asserted in DeployPortBindingTest.
+     */
+    @Test
+    @DisplayName("prod logs structured ECS JSON to the console")
+    fun prodUsesEcsConsoleFormat() {
+        assertEquals("ecs", environment.getProperty("logging.structured.format.console"))
     }
 }
 
@@ -58,6 +76,36 @@ class DeployPortBindingTest {
     @DisplayName("server.port resolves from the PORT property")
     fun serverPortBindsFromPortVar() {
         assertEquals("12345", environment.getProperty("server.port"))
+    }
+
+    /**
+     * The other half of the logging split asserted in DeployProdConfigTest:
+     * outside prod the structured format stays unset, which is what leaves the
+     * human-readable console pattern in place for local work. Asserted here
+     * because this is the only context that boots without the prod profile and
+     * already has an Environment; the dev document inherits this default, adding
+     * nothing but CORS.
+     */
+    @Test
+    @DisplayName("structured logging is off outside prod (readable console pattern)")
+    fun consoleFormatUnsetOutsideProd() {
+        assertNull(environment.getProperty("logging.structured.format.console"))
+    }
+
+    /**
+     * The readable pattern prints message, logger and thread and drops both MDC
+     * and key-values, so without this the correlation id is invisible in dev —
+     * exactly where the "find the id, pull every event from that request"
+     * workflow is first used — and an event shows its name but not its fields.
+     * The :- default keeps startup and shutdown lines, logged outside any
+     * request, from rendering a stray marker. %kvp is deliberately carried in
+     * the correlation slot: the tidy alternative is owning a full copy of Boot's
+     * console pattern across upgrades, which costs more than it returns.
+     */
+    @Test
+    @DisplayName("correlation pattern surfaces the request id in the readable output")
+    fun correlationPatternIncludesRequestId() {
+        assertEquals("[%X{requestId:-}] %kvp ", environment.getProperty("logging.pattern.correlation"))
     }
 }
 
