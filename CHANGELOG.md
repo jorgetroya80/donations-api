@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/jorgetroya80/donations-api/compare/v2.0.0...v2.1.0) (2026-08-05)
+
+
+### Features
+
+* structured domain and security event logging ([#48](https://github.com/jorgetroya80/donations-api/issues/48)) ([631a366](https://github.com/jorgetroya80/donations-api/commit/631a366c966b84c281fd2ec70d3e06a015a7923b))
+
 ## [2.0.0](https://github.com/jorgetroya80/donations-api/compare/v1.11.0...v2.0.0) (2026-07-16)
 
 
