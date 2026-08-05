@@ -53,28 +53,43 @@ data class AuthorizationFailed(val userid: String, val resource: String) : AppEv
     override val fields = mapOf("userid" to userid, "resource" to resource)
 }
 
-data class AdminAction(val userid: String, val action: String, val targetId: Long) : AppEvent {
-    override val name = "authz_admin"
-    override val level = Level.WARN
-    override val fields = mapOf("userid" to userid, "action" to action, "targetId" to targetId)
-
-    /**
-     * A closed vocabulary: this is the only free-text field in the event set, so
-     * request data must never be interpolated into it (ADR-005). OWASP calls the
-     * field "event"; it is keyed "action" here because EventLogger already writes
-     * the event name under "event".
-     */
-    companion object {
-        const val USER_CREATE = "user_create"
-        const val USER_UPDATE = "user_update"
-        const val PASSWORD_RESET = "user_password_reset"
-    }
+/**
+ * What an admin did. An enum rather than free text because this is the one field
+ * a request value could plausibly be interpolated into (ADR-005); the type is the
+ * guard, as it is for ExpenseCategory.
+ *
+ * The emitted value is lowercase, unlike ExpenseCategory which emits its `name`.
+ * That is deliberate: ExpenseCategory is a domain enum and the log just reflects
+ * the domain's own value, whereas these terms exist only for logging, so they
+ * follow the lowercase noun_verb grammar of the event names they sit beside.
+ */
+enum class AdminActionType(val value: String) {
+    USER_CREATE("user_create"),
+    USER_UPDATE("user_update"),
+    PASSWORD_RESET("user_password_reset"),
 }
 
-data class AuthorizationChanged(val userid: String, val from: String, val to: String) : AppEvent {
+/**
+ * OWASP calls the descriptor field "event"; it is keyed "action" here because
+ * EventLogger already writes the event name under "event".
+ */
+data class AdminAction(val userid: String, val action: AdminActionType, val targetId: Long) : AppEvent {
+    override val name = "authz_admin"
+    override val level = Level.WARN
+    override val fields = mapOf("userid" to userid, "action" to action.value, "targetId" to targetId)
+}
+
+// userid is the renamed-to username if the same request renamed the user, so
+// targetId is what identifies the account unambiguously.
+data class AuthorizationChanged(
+    val userid: String,
+    val from: String,
+    val to: String,
+    val targetId: Long,
+) : AppEvent {
     override val name = "authz_change"
     override val level = Level.WARN
-    override val fields = mapOf("userid" to userid, "from" to from, "to" to to)
+    override val fields = mapOf("userid" to userid, "from" to from, "to" to to, "targetId" to targetId)
 }
 
 // donorId is null for anonymous donations, which have no donor to identify.

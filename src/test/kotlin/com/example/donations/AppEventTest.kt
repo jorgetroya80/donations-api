@@ -3,6 +3,7 @@ package com.example.donations
 import com.example.donations.expense.ExpenseCategory
 import com.example.donations.infrastructure.events.AccountLocked
 import com.example.donations.infrastructure.events.AdminAction
+import com.example.donations.infrastructure.events.AdminActionType
 import com.example.donations.infrastructure.events.AuthorizationChanged
 import com.example.donations.infrastructure.events.AuthorizationFailed
 import com.example.donations.infrastructure.events.DonationCreated
@@ -148,13 +149,13 @@ class AppEventTest {
     @Test
     @DisplayName("Admin action uses the OWASP event name")
     fun adminActionName() {
-        assertEquals("authz_admin", AdminAction("admin", AdminAction.USER_CREATE, 42).name)
+        assertEquals("authz_admin", AdminAction("admin", AdminActionType.USER_CREATE, 42).name)
     }
 
     @Test
     @DisplayName("Admin action is logged at WARN")
     fun adminActionLevel() {
-        assertEquals(Level.WARN, AdminAction("admin", AdminAction.USER_CREATE, 42).level)
+        assertEquals(Level.WARN, AdminAction("admin", AdminActionType.USER_CREATE, 42).level)
     }
 
     @Test
@@ -162,37 +163,29 @@ class AppEventTest {
     fun adminActionFields() {
         assertEquals(
             mapOf("userid" to "admin", "action" to "user_create", "targetId" to 42L),
-            AdminAction("admin", AdminAction.USER_CREATE, 42).fields,
+            AdminAction("admin", AdminActionType.USER_CREATE, 42).fields,
         )
     }
 
-    @Test
-    @DisplayName("Admin action descriptions are a closed set of short constants")
-    fun adminActionVocabulary() {
-        assertEquals(
-            listOf("user_create", "user_password_reset", "user_update"),
-            listOf(AdminAction.USER_CREATE, AdminAction.PASSWORD_RESET, AdminAction.USER_UPDATE).sorted(),
-        )
-    }
 
     @Test
     @DisplayName("Authorization change uses the OWASP event name")
     fun authorizationChangedName() {
-        assertEquals("authz_change", AuthorizationChanged("operator1", "OPERATOR", "ADMIN").name)
+        assertEquals("authz_change", AuthorizationChanged("operator1", "OPERATOR", "ADMIN", 42).name)
     }
 
     @Test
     @DisplayName("Authorization change is logged at WARN")
     fun authorizationChangedLevel() {
-        assertEquals(Level.WARN, AuthorizationChanged("operator1", "OPERATOR", "ADMIN").level)
+        assertEquals(Level.WARN, AuthorizationChanged("operator1", "OPERATOR", "ADMIN", 42).level)
     }
 
     @Test
-    @DisplayName("Authorization change carries the userid and both privilege levels")
+    @DisplayName("Authorization change carries the userid, both privilege levels and the target id")
     fun authorizationChangedFields() {
         assertEquals(
-            mapOf("userid" to "operator1", "from" to "OPERATOR", "to" to "ADMIN"),
-            AuthorizationChanged("operator1", "OPERATOR", "ADMIN").fields,
+            mapOf("userid" to "operator1", "from" to "OPERATOR", "to" to "ADMIN", "targetId" to 42L),
+            AuthorizationChanged("operator1", "OPERATOR", "ADMIN", 42).fields,
         )
     }
 

@@ -1,24 +1,7 @@
 package com.example.donations
 
-import com.example.donations.expense.ExpenseCategory
-import com.example.donations.infrastructure.events.AccountLocked
-import com.example.donations.infrastructure.events.AdminAction
-import com.example.donations.infrastructure.events.AppEvent
-import com.example.donations.infrastructure.events.AuthorizationChanged
-import com.example.donations.infrastructure.events.AuthorizationFailed
-import com.example.donations.infrastructure.events.DonationCreated
-import com.example.donations.infrastructure.events.DonationUpdated
-import com.example.donations.infrastructure.events.DonorCreated
-import com.example.donations.infrastructure.events.DonorUpdated
 import com.example.donations.infrastructure.events.EventLogger
-import com.example.donations.infrastructure.events.ExpenseCreated
-import com.example.donations.infrastructure.events.ExpenseUpdated
-import com.example.donations.infrastructure.events.LoginFailed
-import com.example.donations.infrastructure.events.LoginSucceeded
-import com.example.donations.infrastructure.events.PasswordChangeFailed
-import com.example.donations.infrastructure.events.PasswordChanged
 import com.example.donations.infrastructure.events.RequestIdFilter
-import com.example.donations.infrastructure.events.UnexpectedError
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -30,17 +13,21 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.context.annotation.Import
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import tools.jackson.databind.ObjectMapper
-import java.math.BigDecimal
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
  * Renders every event through the real ECS encoder, which no other test does:
  * ListAppender captures events *before* formatting, so a formatter rejection —
- * a duplicate key, an unserializable value — is invisible to the rest of the
- * suite and silently drops the line in prod. Logback swallows the failure, so
- * the "no appender error" assertion below is as important as the JSON itself.
+ * a duplicate key, a value that cannot be written — is invisible to the rest of
+ * the suite and silently drops the line in prod. Logback swallows the failure,
+ * so the "no appender error" assertion below is as important as the JSON itself.
+ *
+ * The sample list lives in TestEvents; AppEventPiiGuardTest asserts it covers
+ * every event type.
  */
 @SpringBootTest(properties = ["logging.structured.format.console=ecs"])
 @Import(TestcontainersConfiguration::class)
@@ -54,60 +41,36 @@ class EventFormatterTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    /** One instance per event type; [sampleSetCoversEveryEventType] keeps it honest. */
-    private val samples: List<AppEvent> = listOf(
-        LoginSucceeded("admin", "127.0.0.1"),
-        LoginFailed("admin", "127.0.0.1", locked = true),
-        AccountLocked("admin", "maxretries", 5),
-        PasswordChanged("admin"),
-        PasswordChangeFailed("admin"),
-        AuthorizationFailed("operator1", "/api/v1/users"),
-        AdminAction("admin", AdminAction.USER_CREATE, 42),
-        AuthorizationChanged("operator1", "OPERATOR", "ADMIN"),
-        // donorId null: an anonymous donation, the only null field value in the
-        // vocabulary. Other events already cover non-null Long rendering.
-        DonationCreated(1, null, BigDecimal("100.00")),
-        DonationUpdated(1),
-        DonorCreated(7),
-        DonorUpdated(7),
-        ExpenseCreated(3, BigDecimal("40.00"), ExpenseCategory.SUPPLIES),
-        ExpenseUpdated(3),
-        UnexpectedError("java.lang.IllegalStateException", "/api/v1/donors"),
-    )
-
-    // Events are emitted inside a request in production, so MDC carries a
-    // correlation id. Without it here, a field colliding with the MDC key would
-    // render cleanly and the collision would go unnoticed.
+    /**
+     * Production emits inside an authenticated request, so both the MDC
+     * correlation id and the "actor" key are present. Without them here, a field
+     * colliding with either would render cleanly and the collision would reach
+     * production unnoticed — which is exactly how the requestId defect escaped.
+     */
     @BeforeEach
-    fun setRequestId() {
+    fun enterRequestContext() {
         MDC.put(RequestIdFilter.REQUEST_ID, "formatter-test-request-id")
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken("formatter-test-actor", null, emptyList())
     }
 
     @AfterEach
-    fun clearRequestId() {
+    fun leaveRequestContext() {
         MDC.remove(RequestIdFilter.REQUEST_ID)
-    }
-
-    @Test
-    @DisplayName("Every event type has a sample to render")
-    fun sampleSetCoversEveryEventType() {
-        assertEquals(
-            AppEvent::class.sealedSubclasses.toSet(),
-            samples.map { it::class }.toSet(),
-        )
+        SecurityContextHolder.clearContext()
     }
 
     @Test
     @DisplayName("Every event renders as valid ECS JSON carrying its declared fields")
     fun everyEventRendersAsValidEcsJson(output: CapturedOutput) {
-        samples.forEach { eventLogger.emit(it) }
+        TestEvents.samples.forEach { eventLogger.emit(it) }
 
         val rendered = output.all.lineSequence()
-            .filter { it.startsWith("{") && """"logger":"com.example.donations.events"""" in it }
+            .filter { it.startsWith("{") && """"logger":"${EventLogger.LOGGER_NAME}"""" in it }
             .map { objectMapper.readValue(it, Map::class.java) }
             .associateBy { it["message"] }
 
-        samples.forEach { sample ->
+        TestEvents.samples.forEach { sample ->
             val line = rendered[sample.name] ?: throw AssertionError(
                 "No rendered line for '${sample.name}'. Rendered: ${rendered.keys}",
             )
@@ -118,6 +81,7 @@ class EventFormatterTest {
                 line[RequestIdFilter.REQUEST_ID],
                 "correlation id for ${sample.name}",
             )
+            assertEquals("formatter-test-actor", line["actor"], "actor for ${sample.name}")
             sample.fields.keys.forEach { field ->
                 assertTrue(line.containsKey(field), "${sample.name} is missing field '$field'")
             }
@@ -132,7 +96,7 @@ class EventFormatterTest {
     @Test
     @DisplayName("Rendering produces no appender failure")
     fun renderingProducesNoAppenderFailure(output: CapturedOutput) {
-        samples.forEach { eventLogger.emit(it) }
+        TestEvents.samples.forEach { eventLogger.emit(it) }
 
         assertTrue(
             "failed to append" !in output.all,

@@ -47,7 +47,11 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(AccessDeniedException::class)
     fun handleAccessDenied(ex: AccessDeniedException, request: HttpServletRequest): ProblemDetail {
-        val userid = SecurityContextHolder.getContext().authentication?.name ?: "anonymous"
+        // Unauthenticated callers are rejected with a 401 before reaching a
+        // handler, so the fallback is all but unreachable; it uses Spring's own
+        // principal name so the value is still correct if it ever fires.
+        val userid = SecurityContextHolder.getContext().authentication?.name
+            ?: EventLogger.ANONYMOUS_PRINCIPAL
         eventLogger.emit(AuthorizationFailed(userid, request.requestURI))
         return problem(HttpStatus.FORBIDDEN, "Access denied")
     }

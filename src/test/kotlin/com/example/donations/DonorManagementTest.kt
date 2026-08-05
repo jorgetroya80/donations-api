@@ -523,9 +523,11 @@ class DonorManagementTest {
         lateinit var body: String
         val events = TestEvents.capture {
             body = mockMvc.perform(
-                get("/api/v1/donors")
+                // Query string in the URL, not .param(): only this populates
+                // getQueryString(), so the path-only assertion below proves the
+                // search term cannot reach the log via "resource".
+                get("/api/v1/donors?sort=noSuchProperty")
                     .session(operatorSession)
-                    .param("sort", "noSuchProperty")
             )
                 .andExpect(status().isInternalServerError)
                 .andReturn().response.contentAsString

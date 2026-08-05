@@ -36,6 +36,11 @@ class SecurityConfig(
     fun securityFilterChain(http: HttpSecurity, objectMapper: ObjectMapper): SecurityFilterChain = http
         .csrf { it.disable() }
         .apply { if (corsEnabled) cors(Customizer.withDefaults()) else cors { it.disable() } }
+        // Role rules belong in @PreAuthorize on the controller, not in a matcher
+        // here. A denial from method security is thrown during handler invocation
+        // and reaches GlobalExceptionHandler, which emits authz_fail; a denial
+        // from a matcher happens in the filter chain, never reaches the advice,
+        // and the event silently stops firing for that path with no test failing.
         .authorizeHttpRequests { auth ->
             auth
                 .requestMatchers("/api/v1/login").permitAll()

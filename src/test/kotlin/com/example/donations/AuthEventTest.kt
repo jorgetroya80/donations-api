@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 @DisplayName("Authentication Event Emission Tests")
 class AuthEventTest {
 
-    private val eventsLogger = LoggerFactory.getLogger("com.example.donations.events") as Logger
+    private val eventsLogger = LoggerFactory.getLogger(EventLogger.LOGGER_NAME) as Logger
     private val appender = ListAppender<ILoggingEvent>()
     private val service = LoginAttemptService(EventLogger())
 

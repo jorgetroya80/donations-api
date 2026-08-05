@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component
 @Component
 class EventLogger {
 
-    private val log = LoggerFactory.getLogger("com.example.donations.events")
+    private val log = LoggerFactory.getLogger(LOGGER_NAME)
 
     fun emit(event: AppEvent) {
         var builder = log.atLevel(event.level).addKeyValue("event", event.name)
@@ -25,5 +25,13 @@ class EventLogger {
     }
 
     private fun actor(): String? =
-        SecurityContextHolder.getContext().authentication?.name?.takeIf { it != "anonymousUser" }
+        SecurityContextHolder.getContext().authentication?.name?.takeIf { it != ANONYMOUS_PRINCIPAL }
+
+    companion object {
+        /** Every event goes to this one logger; tests attach to it by name. */
+        const val LOGGER_NAME = "com.example.donations.events"
+
+        /** Spring Security's principal name when no one is authenticated. */
+        const val ANONYMOUS_PRINCIPAL = "anonymousUser"
+    }
 }

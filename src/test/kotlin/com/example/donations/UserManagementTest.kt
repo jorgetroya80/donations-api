@@ -1,7 +1,7 @@
 package com.example.donations
 
 import ch.qos.logback.classic.Level
-import com.example.donations.infrastructure.events.AdminAction
+import com.example.donations.infrastructure.events.AdminActionType
 import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -261,7 +261,7 @@ class UserManagementTest {
         val action = events.single { it.message == "authz_admin" }
         assertEquals(Level.WARN, action.level)
         assertEquals("admin", TestEvents.fieldsOf(action)["userid"])
-        assertEquals(AdminAction.USER_CREATE, TestEvents.fieldsOf(action)["action"])
+        assertEquals(AdminActionType.USER_CREATE.value, TestEvents.fieldsOf(action)["action"])
         assertEquals(
             extractId(createResult.response.contentAsString).toLong(),
             TestEvents.fieldsOf(action)["targetId"],
@@ -283,7 +283,7 @@ class UserManagementTest {
         }
 
         val action = events.single { it.message == "authz_admin" }
-        assertEquals(AdminAction.PASSWORD_RESET, TestEvents.fieldsOf(action)["action"])
+        assertEquals(AdminActionType.PASSWORD_RESET.value, TestEvents.fieldsOf(action)["action"])
         assertEquals(userId.toLong(), TestEvents.fieldsOf(action)["targetId"])
     }
 
@@ -307,7 +307,7 @@ class UserManagementTest {
         assertEquals("OPERATOR", TestEvents.fieldsOf(change)["from"])
         assertEquals("TREASURER", TestEvents.fieldsOf(change)["to"])
         val adminAction = changeEvents.single { it.message == "authz_admin" }
-        assertEquals(AdminAction.USER_UPDATE, TestEvents.fieldsOf(adminAction)["action"])
+        assertEquals(AdminActionType.USER_UPDATE.value, TestEvents.fieldsOf(adminAction)["action"])
         assertEquals(userId.toLong(), TestEvents.fieldsOf(adminAction)["targetId"])
 
         val noChangeEvents = TestEvents.capture {

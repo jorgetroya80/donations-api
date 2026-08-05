@@ -2,6 +2,7 @@ package com.example.donations.user
 
 import com.example.donations.infrastructure.error.NotFoundException
 import com.example.donations.infrastructure.events.AdminAction
+import com.example.donations.infrastructure.events.AdminActionType
 import com.example.donations.infrastructure.events.AuthorizationChanged
 import com.example.donations.infrastructure.events.EventLogger
 import com.example.donations.infrastructure.events.PasswordChangeFailed
@@ -42,7 +43,7 @@ class UserService(
             roles = request.roles,
         )
         val saved = userRepository.save(user)
-        eventLogger.emit(AdminAction(actingUser(), AdminAction.USER_CREATE, saved.id!!))
+        eventLogger.emit(AdminAction(actingUser(), AdminActionType.USER_CREATE, saved.id!!))
         return saved
     }
 
@@ -72,10 +73,15 @@ class UserService(
         }
 
         val saved = userRepository.save(user)
-        val action = if (request.password != null) AdminAction.PASSWORD_RESET else AdminAction.USER_UPDATE
+        val action = if (request.password != null) AdminActionType.PASSWORD_RESET else AdminActionType.USER_UPDATE
+        // Fires unconditionally, including for a PUT that changes nothing: an
+        // admin issuing a pointless write is still an admin action, and deciding
+        // otherwise would mean teaching this code what "no change" means.
         eventLogger.emit(AdminAction(actingUser(), action, id))
         if (user.roles != previousRoles) {
-            eventLogger.emit(AuthorizationChanged(user.username, describe(previousRoles), describe(user.roles)))
+            eventLogger.emit(
+                AuthorizationChanged(user.username, describe(previousRoles), describe(user.roles), id),
+            )
         }
         return saved
     }
