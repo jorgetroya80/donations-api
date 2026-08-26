@@ -23,7 +23,7 @@ import java.time.temporal.ChronoUnit
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestcontainersConfiguration::class)
+@Import(TestcontainersConfiguration::class, FixedClockConfiguration::class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @DisplayName("Financial Reports Tests")
 class FinancialReportsTest {
@@ -205,7 +205,7 @@ class FinancialReportsTest {
     @Test
     @DisplayName("Balance timeseries clamps an over-wide range to the recorded data and today")
     fun balanceTimeseriesClampsOverWideRange() {
-        val today = LocalDate.now()
+        val today = FixedClockConfiguration.TODAY
         val expectedPeriods = ChronoUnit.MONTHS.between(YearMonth.of(2026, 1), YearMonth.from(today)) + 1
 
         mockMvc.perform(
@@ -234,7 +234,7 @@ class FinancialReportsTest {
         mockMvc.perform(
             get("/api/v1/reports/balance/timeseries")
                 .session(treasurerSession)
-                .param("from", LocalDate.now().plusYears(1).toString())
+                .param("from", FixedClockConfiguration.TODAY.plusYears(1).toString())
                 .param("groupBy", "MONTH")
         ).andExpect(status().isBadRequest)
     }

@@ -35,6 +35,26 @@ internal fun buildBalancePeriods(
         .toList()
 }
 
+/**
+ * Clamps the requested range to what can actually be reported: [to] never runs past [today], and
+ * [from] never runs before [earliest], the first recorded transaction. Takes [today] as a value
+ * rather than reading a clock, so the year-end boundary is testable without waiting for it.
+ *
+ * @throws IllegalArgumentException if the clamped range is inverted, which the error handler
+ *   renders as a 400.
+ */
+internal fun resolveTimeseriesBounds(
+    from: LocalDate,
+    to: LocalDate?,
+    today: LocalDate,
+    earliest: LocalDate,
+): Pair<LocalDate, LocalDate> {
+    val resolvedTo = minOf(to ?: today, today)
+    val resolvedFrom = maxOf(from, earliest)
+    require(resolvedFrom <= resolvedTo) { "from ($resolvedFrom) must not be after to ($resolvedTo)" }
+    return resolvedFrom to resolvedTo
+}
+
 private fun coverageRatio(income: BigDecimal, expenses: BigDecimal): BigDecimal? =
     if (expenses.signum() == 0) null
     else income.divide(expenses, 4, RoundingMode.HALF_UP)

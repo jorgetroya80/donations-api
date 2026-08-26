@@ -6,6 +6,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -155,6 +156,133 @@ class BalancePeriodsTest {
         assertEquals(LocalDate.of(2026, 5, 12), period.periodStart)
         assertEquals(LocalDate.of(2026, 5, 12), period.periodEnd)
         assertAmount("50.00", period.netBalance, "net balance")
+    }
+
+    // --- Bounds resolution ---
+
+    private val earliestRecord = LocalDate.of(2026, 1, 15)
+
+    @Test
+    @DisplayName("Omitted to resolves to today")
+    fun omittedToResolvesToToday() {
+        val (from, to) = resolveTimeseriesBounds(
+            from = LocalDate.of(2026, 2, 1),
+            to = null,
+            today = LocalDate.of(2026, 8, 26),
+            earliest = earliestRecord,
+        )
+
+        assertEquals(LocalDate.of(2026, 2, 1), from)
+        assertEquals(LocalDate.of(2026, 8, 26), to)
+    }
+
+    @Test
+    @DisplayName("A to in the future clamps back to today")
+    fun futureToClampsToToday() {
+        val (_, to) = resolveTimeseriesBounds(
+            from = LocalDate.of(2026, 2, 1),
+            to = LocalDate.of(2026, 12, 31),
+            today = LocalDate.of(2026, 8, 26),
+            earliest = earliestRecord,
+        )
+
+        assertEquals(LocalDate.of(2026, 8, 26), to)
+    }
+
+    @Test
+    @DisplayName("A to in the past is left alone")
+    fun pastToIsUnchanged() {
+        val (_, to) = resolveTimeseriesBounds(
+            from = LocalDate.of(2026, 2, 1),
+            to = LocalDate.of(2026, 3, 31),
+            today = LocalDate.of(2026, 8, 26),
+            earliest = earliestRecord,
+        )
+
+        assertEquals(LocalDate.of(2026, 3, 31), to)
+    }
+
+    @Test
+    @DisplayName("A from before the earliest record clamps forward to it")
+    fun fromBeforeEarliestClampsForward() {
+        val (from, _) = resolveTimeseriesBounds(
+            from = LocalDate.of(2020, 1, 1),
+            to = null,
+            today = LocalDate.of(2026, 8, 26),
+            earliest = earliestRecord,
+        )
+
+        assertEquals(earliestRecord, from)
+    }
+
+    @Test
+    @DisplayName("A from after the earliest record is left alone")
+    fun fromAfterEarliestIsUnchanged() {
+        val (from, _) = resolveTimeseriesBounds(
+            from = LocalDate.of(2026, 4, 1),
+            to = null,
+            today = LocalDate.of(2026, 8, 26),
+            earliest = earliestRecord,
+        )
+
+        assertEquals(LocalDate.of(2026, 4, 1), from)
+    }
+
+    @Test
+    @DisplayName("A from after the resolved to is rejected")
+    fun fromAfterResolvedToIsRejected() {
+        assertFailsWith<IllegalArgumentException> {
+            resolveTimeseriesBounds(
+                from = LocalDate.of(2027, 6, 1),
+                to = null,
+                today = LocalDate.of(2026, 8, 26),
+                earliest = earliestRecord,
+            )
+        }
+    }
+
+    /**
+     * The pair below is the reason the clock is injected. On the last day of the year the range
+     * must still end that day rather than roll into the next, and on the first day of the new year
+     * a January bucket must exist immediately. A UTC server serving a Europe/Madrid church is one
+     * to two hours behind local midnight, so between 00:00 and 02:00 local it crosses this
+     * boundary at the wrong moment and hides the day's records.
+     */
+    @Test
+    @DisplayName("On December 31 the range ends that day and the last bucket is December")
+    fun yearEndRangeEndsOnDecember31() {
+        val (from, to) = resolveTimeseriesBounds(
+            from = LocalDate.of(2026, 1, 1),
+            to = null,
+            today = LocalDate.of(2026, 12, 31),
+            earliest = LocalDate.of(2026, 1, 1),
+        )
+
+        assertEquals(LocalDate.of(2026, 1, 1), from)
+        assertEquals(LocalDate.of(2026, 12, 31), to)
+
+        val periods = buildBalancePeriods(from, to, emptyMap(), emptyMap())
+        assertEquals(12, periods.size)
+        assertEquals(LocalDate.of(2026, 12, 31), periods.last().periodEnd)
+    }
+
+    @Test
+    @DisplayName("On January 1 the range extends into the new year and a January bucket exists")
+    fun newYearAddsJanuaryBucket() {
+        val (from, to) = resolveTimeseriesBounds(
+            from = LocalDate.of(2026, 1, 1),
+            to = null,
+            today = LocalDate.of(2027, 1, 1),
+            earliest = LocalDate.of(2026, 1, 1),
+        )
+
+        assertEquals(LocalDate.of(2027, 1, 1), to)
+
+        val periods = buildBalancePeriods(from, to, emptyMap(), emptyMap())
+        assertEquals(13, periods.size)
+        val january = periods.last()
+        assertEquals(LocalDate.of(2027, 1, 1), january.periodStart)
+        assertEquals(LocalDate.of(2027, 1, 1), january.periodEnd)
     }
 
     @Test

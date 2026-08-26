@@ -24,7 +24,7 @@ import java.time.LocalDate
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestcontainersConfiguration::class)
+@Import(TestcontainersConfiguration::class, FixedClockConfiguration::class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @DisplayName("Balance Timeseries Empty Data Tests")
 class BalanceTimeseriesEmptyDataTest {
@@ -51,7 +51,7 @@ class BalanceTimeseriesEmptyDataTest {
     @Test
     @DisplayName("Balance timeseries over an empty ledger returns no periods")
     fun emptyLedgerReturnsNoPeriods() {
-        val today = LocalDate.now()
+        val today = FixedClockConfiguration.TODAY
 
         mockMvc.perform(
             get("/api/v1/reports/balance/timeseries")

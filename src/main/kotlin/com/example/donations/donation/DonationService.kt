@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 import java.time.LocalDate
 
 @Service
@@ -18,10 +19,11 @@ class DonationService(
     private val donationRepository: DonationRepository,
     private val donorRepository: DonorRepository,
     private val eventLogger: EventLogger,
+    private val clock: Clock,
 ) {
 
     fun listDonations(pageable: Pageable, from: LocalDate?, to: LocalDate?): Page<Donation> {
-        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to, clock)
         return donationRepository.findByDonationDateBetween(effectiveFrom, effectiveTo, pageable)
     }
 

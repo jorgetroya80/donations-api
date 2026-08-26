@@ -316,6 +316,75 @@ carries Swagger annotations — this is a deliberate, documented exception, not 
 
 ---
 
+---
+
+## Task 8: Inject a `Clock` with an explicit zone
+
+**Description:** `LocalDate.now()` resolves against the JVM default zone. On the deploy target
+that is UTC, while the church is in Europe/Madrid — so for the first one to two hours of every
+local day the server's "today" is still yesterday. A donation dated today is then clamped out of
+the series and reads as lost data, and the effect is most visible at the Dec 31 → Jan 1 rollover.
+
+Add a `Clock` bean built from an explicit, configurable zone; thread it through `defaultYearRange`
+and the three services that call it; and extract the timeseries bounds arithmetic into a pure
+`resolveTimeseriesBounds(from, to, today, earliest)` so the rollover can be tested exactly rather
+than inferred.
+
+This is a production change made for correctness, not for test convenience — "today" is genuine
+business input to this endpoint, and clamping to it *is* the feature.
+
+**Acceptance criteria:**
+- [ ] The clock's zone comes from `app.timezone` (default `Europe/Madrid`), never the JVM default.
+- [ ] `defaultYearRange` derives the year from the injected clock; the four endpoints using it
+      behave identically under the system clock.
+- [ ] `resolveTimeseriesBounds` is pure and takes `today` as a parameter.
+- [ ] Unit tests pin both sides of the rollover: `today = 2026-12-31` and `today = 2027-01-01`.
+
+**Verification:**
+- [ ] Tests pass: `./gradlew test --tests "com.example.donations.report.BalancePeriodsTest"`
+- [ ] Build succeeds: `./gradlew build`
+
+**Dependencies:** Task 5
+
+**Files likely touched:**
+- `src/main/kotlin/com/example/donations/infrastructure/config/TimeConfig.kt` (new)
+- `src/main/kotlin/com/example/donations/infrastructure/DateRanges.kt`
+- `src/main/kotlin/com/example/donations/report/BalancePeriods.kt`, `ReportService.kt`
+- `src/main/kotlin/com/example/donations/donation/DonationService.kt`,
+  `src/main/kotlin/com/example/donations/expense/ExpenseService.kt`
+- `src/main/resources/application.yaml`
+
+**Estimated scope:** M (5+ files, each touched narrowly)
+
+---
+
+## Task 9: Pin the integration fixtures to a fixed clock
+
+**Description:** `FinancialReportsTest` seeds data at fixed 2026 dates but four of its tests send
+no `from`/`to`, so they fall through `defaultYearRange` to the current year — on 2027-01-01 the
+seeded rows fall outside the default window and the asserted totals go to zero. With Task 8's
+clock injectable, a fixed test clock removes the rot without rewriting the seed data.
+
+**Acceptance criteria:**
+- [ ] Integration tests run against a fixed clock in Europe/Madrid, not the system clock.
+- [ ] The four default-range tests would still pass on 2027-01-01.
+- [ ] New test classes carry `@DirtiesContext` (the context cache key ignores it, and
+      `TestAuth.loginAsAdmin` rotates the admin password — see Task 6's note).
+
+**Verification:**
+- [ ] Tests pass: `./gradlew build`
+
+**Dependencies:** Task 8
+
+**Files likely touched:**
+- `src/test/kotlin/com/example/donations/FinancialReportsTest.kt`
+- `src/test/kotlin/com/example/donations/BalanceTimeseriesEmptyDataTest.kt`
+- a shared fixed-clock test configuration
+
+**Estimated scope:** S
+
+---
+
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |

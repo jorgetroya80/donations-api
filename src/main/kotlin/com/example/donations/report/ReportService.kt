@@ -10,6 +10,7 @@ import com.example.donations.infrastructure.error.NotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.time.Clock
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -19,10 +20,11 @@ class ReportService(
     private val donationRepository: DonationRepository,
     private val expenseRepository: ExpenseRepository,
     private val donorRepository: DonorRepository,
+    private val clock: Clock,
 ) {
 
     fun donationSummary(from: LocalDate?, to: LocalDate?): DonationSummaryResponse {
-        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to, clock)
 
         val rows = donationRepository.sumByTypeAndDateBetween(effectiveFrom, effectiveTo)
         val totalsByType = rows.map { row ->
@@ -42,7 +44,7 @@ class ReportService(
     }
 
     fun expenseSummary(from: LocalDate?, to: LocalDate?): ExpenseSummaryResponse {
-        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to, clock)
 
         val rows = expenseRepository.sumByCategoryAndDateBetween(effectiveFrom, effectiveTo)
         val totalsByCategory = rows.map { row ->
@@ -62,7 +64,7 @@ class ReportService(
     }
 
     fun balance(from: LocalDate?, to: LocalDate?): BalanceResponse {
-        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to, clock)
 
         val totalIncome = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
         val totalExpenses = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
@@ -77,8 +79,7 @@ class ReportService(
     }
 
     fun balanceTimeseries(from: LocalDate, to: LocalDate?, groupBy: GroupBy): BalanceTimeseriesResponse {
-        val today = LocalDate.now()
-        val resolvedTo = minOf(to ?: today, today)
+        val today = LocalDate.now(clock)
 
         // Both tables empty is the only "no records" case: one populated table
         // with the other empty is an ordinary range.
@@ -86,13 +87,12 @@ class ReportService(
             .minOrNull()
             ?: return BalanceTimeseriesResponse(
                 from = from,
-                to = resolvedTo,
+                to = minOf(to ?: today, today),
                 groupBy = groupBy,
                 periods = emptyList(),
             )
 
-        val resolvedFrom = maxOf(from, earliest)
-        require(resolvedFrom <= resolvedTo) { "from ($resolvedFrom) must not be after to ($resolvedTo)" }
+        val (resolvedFrom, resolvedTo) = resolveTimeseriesBounds(from, to, today, earliest)
 
         return BalanceTimeseriesResponse(
             from = resolvedFrom,
@@ -111,7 +111,7 @@ class ReportService(
         val donor = donorRepository.findById(donorId)
             .orElseThrow { NotFoundException("Donor not found with id: $donorId") }
 
-        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to, clock)
 
         val donations = donationRepository.findByDonorIdAndDonationDateBetween(donorId, effectiveFrom, effectiveTo)
         val entries = donations.map { d ->

@@ -90,10 +90,39 @@ Nothing blocked. One stop-and-ask: if Hibernate rejects `year()` / `month()` in 
   - [x] Verify: asserted in `OpenApiTest` rather than checked by hand, so a future edit that
         drops them fails the build
 
+## Phase 4: Time zone correctness (added 2026-08-26, approved on this branch)
+
+Driver: `LocalDate.now()` reads the JVM default zone, which is UTC on the deploy target while the
+church is in Europe/Madrid. For the first 1–2 hours of each local day the server's "today" is
+still yesterday, so a donation dated today is clamped out of the series and looks lost. The
+Dec 31 → Jan 1 rollover is the worst case. This also retires the suite's 2027 rot.
+
+- [x] **Task 8 — Inject a `Clock` with an explicit zone** (M · deps: 5)
+  - [x] `TimeConfig` bean: `Clock.system(ZoneId.of(app.timezone))`, default `Europe/Madrid`
+  - [x] `defaultYearRange` takes the clock; `DonationService`, `ExpenseService`, `ReportService`
+        inject it
+  - [x] Bounds arithmetic extracted to a pure `resolveTimeseriesBounds(from, to, today, earliest)`
+  - [x] Unit tests pin the boundary: `today = 2026-12-31` vs `2027-01-01`, each run through
+        `buildBalancePeriods` so a dropped or duplicated edge month fails too
+  - [x] Zone asserted in `DeployPortBindingTest` — against the literal zone, not
+        `ZoneId.systemDefault()`, which would pass for the wrong reason on a Madrid laptop
+  - [x] Verify: `BalancePeriodsTest` 16/16, `DeployPortBindingTest` 4/4
+  - Side effect, left alone deliberately: `LoginAttemptService` declares
+    `clock: Clock = Clock.systemUTC()` as a Kotlin default. With a `Clock` bean now present,
+    Spring injects the Madrid clock and that default becomes unreachable in production. Harmless
+    — lockout windows are measured with `Instant`/`Duration`, which are zone-independent — but
+    it is a real behaviour change outside this task's scope. **Flagged for Jorge.**
+
+- [x] **Task 9 — Pin the integration fixtures to a fixed clock** (S · deps: 8)
+  - [x] `FixedClockConfiguration` pins today to 2026-08-26 in Europe/Madrid; distinct bean name
+        plus `@Primary`, since a same-name bean would be a definition clash Boot rejects
+  - [x] The four default-range tests in `FinancialReportsTest` now survive 2027-01-01
+  - [x] Verify: `FinancialReportsTest` 18/18, `BalanceTimeseriesEmptyDataTest` 1/1
+
 ### Checkpoint: Complete
 
 - [x] All nine spec acceptance criteria pass
-- [x] `./gradlew build` green — 224 tests, 0 failures
+- [x] `./gradlew build` green — 233 tests, 0 failures
 - [x] `/v3/api-docs` shows the endpoint and the three field descriptions
 - [x] Committed per task on `feat/balance-timeseries` (Jorge approved commits on a branch for
       this run only; nothing pushed, `main` untouched)
