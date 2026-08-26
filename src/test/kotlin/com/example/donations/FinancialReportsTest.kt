@@ -212,7 +212,9 @@ class FinancialReportsTest {
             get("/api/v1/reports/balance/timeseries")
                 .session(treasurerSession)
                 .param("from", "2020-01-01")
-                .param("to", "2026-12-31")
+                // Deliberately in the future so the clamp has something to clamp,
+                // whatever year the suite runs in.
+                .param("to", today.plusYears(1).toString())
                 .param("groupBy", "MONTH")
         )
             .andExpect(status().isOk)
