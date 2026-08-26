@@ -173,7 +173,8 @@ pure function, so these run in milliseconds:
 - `coverageRatio` scale 4 HALF_UP on a non-terminating division;
 - zero expenses → `null`; zero income with expenses → `0.0000`;
 - single-day range;
-- empty inputs → empty list.
+- empty inputs over a real range → still zero-filled periods, never an empty list (the
+  `periods: []` case is the service's no-records short-circuit, not the builder's).
 
 **Integration (`FinancialReportsTest.kt`, existing style, `TestAuth` sessions)** — only what needs
 a real database:

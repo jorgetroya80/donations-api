@@ -12,14 +12,16 @@ Nothing blocked. One stop-and-ask: if Hibernate rejects `year()` / `month()` in 
   - [x] `coverageRatio` declared `BigDecimal?`
   - [x] Verify: `./gradlew compileKotlin` clean (full build at the phase checkpoint)
 
-- [ ] **Task 2 — Pure bucketing function and unit tests** (S · deps: 1)
-  - [ ] `BalancePeriods.kt` with `buildBalancePeriods` and ratio helper (scale 4, HALF_UP)
-  - [ ] Ordered consecutive months
-  - [ ] Gap month zero-filled with `coverageRatio: null`
-  - [ ] First/last buckets clipped to range bounds
-  - [ ] Zero expenses → `null`; zero income with expenses → `0.0000`
-  - [ ] Single-month range → one clipped period
-  - [ ] Verify: `./gradlew test --tests "com.example.donations.report.BalancePeriodsTest"`
+- [x] **Task 2 — Pure bucketing function and unit tests** (S · deps: 1)
+  - [x] `BalancePeriods.kt` with `buildBalancePeriods` and ratio helper (scale 4, HALF_UP)
+  - [x] Ordered consecutive months
+  - [x] Gap month zero-filled with `coverageRatio: null`
+  - [x] First/last buckets clipped to range bounds
+  - [x] Zero expenses → `null`; zero income with expenses → `0.0000`
+  - [x] Single-month range → one clipped period
+  - [x] Verify: 8/8 green in `BalancePeriodsTest`
+  - Spec fix: "empty inputs → empty list" contradicted the zero-fill rule; the `periods: []`
+    case belongs to the service's no-records short-circuit (Task 4), not the builder.
 
 ### Checkpoint: Rules
 
