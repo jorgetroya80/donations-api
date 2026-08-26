@@ -81,9 +81,13 @@ range for which data can exist:
 - `from` is clamped forwards to the earliest recorded transaction — there is no history before the
   first record.
 - The response echoes the **clamped** values, not the requested ones.
-- After clamping, `from > to` is a 400. This also covers a `from` in the future, which needs no
-  separate rule.
-- With no records at all, `periods` is `[]`. An empty ledger is a valid state, not an error.
+- Validation is against the caller's **own** `from`, not the clamped one: `from > to` is a 400,
+  which also covers a `from` in the future. Clamping must never manufacture an error — asking
+  about a period that predates the first record is well formed, and rejecting it would quote
+  dates the caller never sent.
+- With no records in the window — an empty ledger, or a window ending before the first record —
+  `periods` is `[]` and the echoed range is the requested `from` with the resolved `to`. Both are
+  valid states, not errors, and the envelope is never inverted.
 
 **Bucketing.** Periods are calendar buckets of the `groupBy` unit, **clipped** to the resolved
 range rather than snapped outward to whole units. The first and last period may therefore be

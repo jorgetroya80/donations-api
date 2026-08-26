@@ -79,31 +79,27 @@ class ReportService(
     }
 
     fun balanceTimeseries(from: LocalDate, to: LocalDate?, groupBy: GroupBy): BalanceTimeseriesResponse {
-        val today = LocalDate.now(clock)
-
-        // Both tables empty is the only "no records" case: one populated table
-        // with the other empty is an ordinary range.
+        // The earlier of the two tables' first records, or null when the ledger is empty.
+        // One populated table with the other empty is an ordinary range, not an empty ledger.
         val earliest = listOfNotNull(donationRepository.minDonationDate(), expenseRepository.minExpenseDate())
             .minOrNull()
-            ?: return BalanceTimeseriesResponse(
-                from = from,
-                to = minOf(to ?: today, today),
-                groupBy = groupBy,
-                periods = emptyList(),
-            )
 
-        val (resolvedFrom, resolvedTo) = resolveTimeseriesBounds(from, to, today, earliest)
+        val bounds = resolveTimeseriesBounds(from, to, LocalDate.now(clock), earliest)
 
         return BalanceTimeseriesResponse(
-            from = resolvedFrom,
-            to = resolvedTo,
+            from = bounds.from,
+            to = bounds.to,
             groupBy = groupBy,
-            periods = buildBalancePeriods(
-                from = resolvedFrom,
-                to = resolvedTo,
-                incomeByMonth = monthlyTotals(donationRepository.sumByMonthAndDateBetween(resolvedFrom, resolvedTo)),
-                expensesByMonth = monthlyTotals(expenseRepository.sumByMonthAndDateBetween(resolvedFrom, resolvedTo)),
-            ),
+            periods = if (!bounds.holdsRecords) {
+                emptyList()
+            } else {
+                buildBalancePeriods(
+                    from = bounds.from,
+                    to = bounds.to,
+                    incomeByMonth = monthlyTotals(donationRepository.sumByMonthAndDateBetween(bounds.from, bounds.to)),
+                    expensesByMonth = monthlyTotals(expenseRepository.sumByMonthAndDateBetween(bounds.from, bounds.to)),
+                )
+            },
         )
     }
 

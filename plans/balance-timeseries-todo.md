@@ -126,3 +126,26 @@ Dec 31 → Jan 1 rollover is the worst case. This also retires the suite's 2027 
 - [x] `/v3/api-docs` shows the endpoint and the three field descriptions
 - [x] Committed per task on `feat/balance-timeseries` (Jorge approved commits on a branch for
       this run only; nothing pushed, `main` untouched)
+
+## Review follow-up (2026-08-26)
+
+Five-axis review of the branch found two correctness issues and one regression, all fixed here.
+
+- [x] **Clamping no longer manufactures a 400.** `from=2020-01-01&to=2021-12-31` against a ledger
+      starting 2026 used to clamp `from` forward past `to` and reject a well-formed question with
+      dates the caller never sent. Validation now runs against the caller's own `from`; a window
+      with no records is `periods: []`.
+- [x] **The empty ledger no longer skips validation.** An inverted range was a 400 with data and a
+      200 with an inverted envelope without it. Well-formedness cannot depend on ledger state.
+- [x] **`MissingPathVariableException` returns 500 again.** The binding handler caught the shared
+      parent `ServletRequestBindingException`, which would have reported a URI-template mapping bug
+      of ours as a client error. Narrowed to `MissingServletRequestParameterException` +
+      `TypeMismatchException`.
+- [x] **Clamp rule lives in one place.** `resolveTimeseriesBounds` now owns it and returns a
+      `TimeseriesBounds(from, to, holdsRecords)`; the service no longer repeats `minOf(to ?: today,
+      today)` for its short-circuit.
+- [x] Verify: 238 tests green (19 unit, 19 + 2 integration), `./gradlew build` clean.
+
+Left open from the review, not requested: the 400 body says "Invalid request parameter" without
+naming the parameter, and `DeployPortBindingTest` asserts the literal `Europe/Madrid`, so it fails
+on a machine with `APP_TIMEZONE` set.

@@ -228,6 +228,24 @@ class FinancialReportsTest {
     }
 
     @Test
+    @DisplayName("Balance timeseries over a window that predates all records returns no periods")
+    fun balanceTimeseriesBeforeFirstRecordReturnsNoPeriods() {
+        // A well-formed question about a period the church has no records for. Clamping from
+        // forward must not turn it into an inverted range and a 400.
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", "2020-01-01")
+                .param("to", "2021-12-31")
+                .param("groupBy", "MONTH")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.from").value("2020-01-01"))
+            .andExpect(jsonPath("$.to").value("2021-12-31"))
+            .andExpect(jsonPath("$.periods.length()").value(0))
+    }
+
+    @Test
     @DisplayName("Balance timeseries with a future from returns 400")
     fun balanceTimeseriesWithFutureFromReturns400() {
         // to clamps back to today, so a future from lands after it.

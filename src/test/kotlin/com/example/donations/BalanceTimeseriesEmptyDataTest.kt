@@ -65,4 +65,17 @@ class BalanceTimeseriesEmptyDataTest {
             .andExpect(jsonPath("$.periods").isArray)
             .andExpect(jsonPath("$.periods.length()").value(0))
     }
+
+    @Test
+    @DisplayName("An inverted range is a 400 even when the ledger is empty")
+    fun invertedRangeIsRejectedOnAnEmptyLedger() {
+        // Whether a request is well-formed cannot depend on whether the church has
+        // recorded anything yet — and no envelope should come back with from after to.
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", FixedClockConfiguration.TODAY.plusYears(1).toString())
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isBadRequest)
+    }
 }

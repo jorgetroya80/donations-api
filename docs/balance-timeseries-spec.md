@@ -29,11 +29,16 @@ or "the last twelve months".
 1. `to` = min(`to` ?: today, today). **"Today" is the civil date in the church's zone**
    (`app.timezone`, default `Europe/Madrid`), never the JVM default — the deploy target runs UTC,
    which is one to two hours behind local midnight.
-2. `from` = max(`from`, earliest transaction date across donations and expenses).
-3. If no records exist at all, return `periods: []` with the range echoed from step 1.
-4. If `from > to` after clamping, return 400. This also covers a `from` in the future.
+2. Validate the caller's **own** `from` against the resolved `to`: `from > to` is a 400. This
+   also covers a `from` in the future, and it does not depend on whether any records exist —
+   whether a request is well formed cannot vary with the state of the ledger.
+3. `from` = max(`from`, earliest transaction date across donations and expenses).
+4. If no records exist at all, or the clamped `from` now falls after the resolved `to` (the
+   window predates the church's first record), return `periods: []`. Both are ordinary answers,
+   not errors: the caller asked a well-formed question about a period with nothing in it.
 
-The response echoes the **clamped** values.
+The response echoes the **clamped** values when periods are returned, and the requested `from`
+with the resolved `to` when there are none — never an inverted range.
 
 There is no cap on range size. One church's ledger will not reach a size where ~320 zero-filled
 monthly buckets matter, and any cap would be a guessed number.
@@ -90,8 +95,10 @@ The endpoint returns **numbers, not verdicts**: no `covered` flag, no trend clas
    not the calendar month bounds.
 6. `coverageRatio` is scale 4 HALF_UP; `null` when `totalExpenses` is 0; `0.0000` when
    `totalIncome` is 0 and expenses are non-zero.
-7. `from > to` after clamping returns 400 (RFC 9457 ProblemDetail, per ADR-004).
-8. An empty database returns `periods: []`, not 404 and not an error.
+7. A caller-supplied `from` after the resolved `to` returns 400 (RFC 9457 ProblemDetail, per
+   ADR-004), whether or not the ledger holds records.
+8. An empty database, and a window that ends before the first record, both return `periods: []`
+   with a non-inverted echoed range — not 404, not an error.
 9. OPERATOR is denied; TREASURER and PASTOR are allowed.
 
 ## Tech Stack

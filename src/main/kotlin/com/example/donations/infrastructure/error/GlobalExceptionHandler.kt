@@ -16,7 +16,7 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.core.AuthenticationException
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.MethodArgumentNotValidException
-import org.springframework.web.bind.ServletRequestBindingException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
@@ -74,7 +74,12 @@ class GlobalExceptionHandler(
     // unparseable date, an unknown enum value. They are caller errors, but they are
     // not IllegalArgumentException, so without this the catch-all below claims them
     // and reports 500.
-    @ExceptionHandler(ServletRequestBindingException::class, TypeMismatchException::class)
+    //
+    // Deliberately not the shared parent ServletRequestBindingException: that would also
+    // capture MissingPathVariableException, which means a @PathVariable does not match its
+    // URI template — a mapping bug of ours, and a 500 by design. It stays with the catch-all,
+    // which logs it.
+    @ExceptionHandler(MissingServletRequestParameterException::class, TypeMismatchException::class)
     fun handleBadRequestBinding(ex: Exception): ProblemDetail =
         problem(HttpStatus.BAD_REQUEST, "Invalid request parameter")
 

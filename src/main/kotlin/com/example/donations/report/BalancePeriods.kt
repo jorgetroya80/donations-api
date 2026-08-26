@@ -36,23 +36,44 @@ internal fun buildBalancePeriods(
 }
 
 /**
+ * The range a timeseries response reports on: [from] and [to] are the bounds to echo, and
+ * [holdsRecords] says whether any period can be built from them.
+ */
+internal data class TimeseriesBounds(
+    val from: LocalDate,
+    val to: LocalDate,
+    val holdsRecords: Boolean,
+)
+
+/**
  * Clamps the requested range to what can actually be reported: [to] never runs past [today], and
- * [from] never runs before [earliest], the first recorded transaction. Takes [today] as a value
- * rather than reading a clock, so the year-end boundary is testable without waiting for it.
+ * [from] never runs before [earliest], the first recorded transaction, which is null when the
+ * ledger is empty. Takes [today] as a value rather than reading a clock, so the year-end boundary
+ * is testable without waiting for it.
  *
- * @throws IllegalArgumentException if the clamped range is inverted, which the error handler
+ * Validation is against the caller's own [from], never the clamped one: asking about a period
+ * that predates the church's first record is a well-formed question whose answer is "nothing",
+ * and answering it with an inverted-range error would quote dates the caller never sent.
+ *
+ * @throws IllegalArgumentException if the caller's own range is inverted, which the error handler
  *   renders as a 400.
  */
 internal fun resolveTimeseriesBounds(
     from: LocalDate,
     to: LocalDate?,
     today: LocalDate,
-    earliest: LocalDate,
-): Pair<LocalDate, LocalDate> {
+    earliest: LocalDate?,
+): TimeseriesBounds {
     val resolvedTo = minOf(to ?: today, today)
-    val resolvedFrom = maxOf(from, earliest)
-    require(resolvedFrom <= resolvedTo) { "from ($resolvedFrom) must not be after to ($resolvedTo)" }
-    return resolvedFrom to resolvedTo
+    require(from <= resolvedTo) { "from ($from) must not be after to ($resolvedTo)" }
+
+    val resolvedFrom = earliest?.let { maxOf(from, it) }
+    return if (resolvedFrom == null || resolvedFrom > resolvedTo) {
+        // Nothing recorded in the window: echo what was asked for, minus the future.
+        TimeseriesBounds(from, resolvedTo, holdsRecords = false)
+    } else {
+        TimeseriesBounds(resolvedFrom, resolvedTo, holdsRecords = true)
+    }
 }
 
 private fun coverageRatio(income: BigDecimal, expenses: BigDecimal): BigDecimal? =
