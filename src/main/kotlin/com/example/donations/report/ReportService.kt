@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.YearMonth
 
 @Service
 @Transactional(readOnly = true)
@@ -75,6 +76,37 @@ class ReportService(
         )
     }
 
+    fun balanceTimeseries(from: LocalDate, to: LocalDate?, groupBy: GroupBy): BalanceTimeseriesResponse {
+        val today = LocalDate.now()
+        val resolvedTo = minOf(to ?: today, today)
+
+        // Both tables empty is the only "no records" case: one populated table
+        // with the other empty is an ordinary range.
+        val earliest = listOfNotNull(donationRepository.minDonationDate(), expenseRepository.minExpenseDate())
+            .minOrNull()
+            ?: return BalanceTimeseriesResponse(
+                from = from,
+                to = resolvedTo,
+                groupBy = groupBy,
+                periods = emptyList(),
+            )
+
+        val resolvedFrom = maxOf(from, earliest)
+        require(resolvedFrom <= resolvedTo) { "from ($resolvedFrom) must not be after to ($resolvedTo)" }
+
+        return BalanceTimeseriesResponse(
+            from = resolvedFrom,
+            to = resolvedTo,
+            groupBy = groupBy,
+            periods = buildBalancePeriods(
+                from = resolvedFrom,
+                to = resolvedTo,
+                incomeByMonth = monthlyTotals(donationRepository.sumByMonthAndDateBetween(resolvedFrom, resolvedTo)),
+                expensesByMonth = monthlyTotals(expenseRepository.sumByMonthAndDateBetween(resolvedFrom, resolvedTo)),
+            ),
+        )
+    }
+
     fun donorStatement(donorId: Long, from: LocalDate?, to: LocalDate?): DonorStatementResponse {
         val donor = donorRepository.findById(donorId)
             .orElseThrow { NotFoundException("Donor not found with id: $donorId") }
@@ -102,4 +134,11 @@ class ReportService(
             total = total,
         )
     }
+
+    // year() / month() come back as some Number subtype depending on dialect and
+    // driver, so they are read as Number rather than cast to a concrete type.
+    private fun monthlyTotals(rows: List<Array<Any>>): Map<YearMonth, BigDecimal> =
+        rows.associate { row ->
+            YearMonth.of((row[0] as Number).toInt(), (row[1] as Number).toInt()) to row[2] as BigDecimal
+        }
 }
