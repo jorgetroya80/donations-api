@@ -38,6 +38,26 @@ data class BalanceResponse(
     val netBalance: BigDecimal,
 )
 
+enum class GroupBy {
+    MONTH,
+}
+
+data class BalanceTimeseriesResponse(
+    val from: LocalDate,
+    val to: LocalDate,
+    val groupBy: GroupBy,
+    val periods: List<PeriodBalance>,
+) {
+    data class PeriodBalance(
+        val periodStart: LocalDate,
+        val periodEnd: LocalDate,
+        val totalIncome: BigDecimal,
+        val totalExpenses: BigDecimal,
+        val netBalance: BigDecimal,
+        val coverageRatio: BigDecimal?,
+    )
+}
+
 data class DonorStatementResponse(
     val donorId: Long,
     val donorName: String,

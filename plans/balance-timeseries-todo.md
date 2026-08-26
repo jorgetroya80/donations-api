@@ -6,11 +6,11 @@ Nothing blocked. One stop-and-ask: if Hibernate rejects `year()` / `month()` in 
 
 ## Phase 1: Rules in isolation
 
-- [ ] **Task 1 — Response DTOs and `GroupBy` enum** (XS · deps: none)
-  - [ ] `GroupBy` enum with single value `MONTH`
-  - [ ] `BalanceTimeseriesResponse` with nested `PeriodBalance`
-  - [ ] `coverageRatio` declared `BigDecimal?`
-  - [ ] Verify: `./gradlew build`
+- [x] **Task 1 — Response DTOs and `GroupBy` enum** (XS · deps: none)
+  - [x] `GroupBy` enum with single value `MONTH`
+  - [x] `BalanceTimeseriesResponse` with nested `PeriodBalance`
+  - [x] `coverageRatio` declared `BigDecimal?`
+  - [x] Verify: `./gradlew compileKotlin` clean (full build at the phase checkpoint)
 
 - [ ] **Task 2 — Pure bucketing function and unit tests** (S · deps: 1)
   - [ ] `BalancePeriods.kt` with `buildBalancePeriods` and ratio helper (scale 4, HALF_UP)
