@@ -85,13 +85,15 @@ Nothing blocked. One stop-and-ask: if Hibernate rejects `year()` / `month()` in 
     without it hands its mutated database to the next class — and `TestAuth.loginAsAdmin` rotates
     the admin password, so the next class's login fails with a 401 that looks like a flake.
 
-- [ ] **Task 7 — `@Schema` descriptions** (XS · deps: 5)
-  - [ ] Descriptions on `coverageRatio`, `periodStart`, `periodEnd` only
-  - [ ] Verify: descriptions visible in `/v3/api-docs` under the dev profile
+- [x] **Task 7 — `@Schema` descriptions** (XS · deps: 5)
+  - [x] Descriptions on `coverageRatio`, `periodStart`, `periodEnd` only
+  - [x] Verify: asserted in `OpenApiTest` rather than checked by hand, so a future edit that
+        drops them fails the build
 
 ### Checkpoint: Complete
 
-- [ ] All nine spec acceptance criteria pass
-- [ ] `./gradlew build` green
-- [ ] `/v3/api-docs` shows endpoint with field descriptions
-- [ ] Report to Jorge — **do not commit**
+- [x] All nine spec acceptance criteria pass
+- [x] `./gradlew build` green — 224 tests, 0 failures
+- [x] `/v3/api-docs` shows the endpoint and the three field descriptions
+- [x] Committed per task on `feat/balance-timeseries` (Jorge approved commits on a branch for
+      this run only; nothing pushed, `main` untouched)
