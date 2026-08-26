@@ -26,7 +26,9 @@ or "the last twelve months".
 
 ### Bounds resolution (in order)
 
-1. `to` = min(`to` ?: today, today).
+1. `to` = min(`to` ?: today, today). **"Today" is the civil date in the church's zone**
+   (`app.timezone`, default `Europe/Madrid`), never the JVM default — the deploy target runs UTC,
+   which is one to two hours behind local midnight.
 2. `from` = max(`from`, earliest transaction date across donations and expenses).
 3. If no records exist at all, return `periods: []` with the range echoed from step 1.
 4. If `from > to` after clamping, return 400. This also covers a `from` in the future.

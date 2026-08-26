@@ -74,6 +74,10 @@ reuses that response's field names (`totalIncome`, `totalExpenses`, `netBalance`
 range for which data can exist:
 
 - `to` is clamped backwards to today when absent or in the future — there is no future to report on.
+  "Today" is resolved through an injected `Clock` zoned to the church (`app.timezone`, default
+  `Europe/Madrid`), not the JVM default: the deploy target runs UTC, so for the first one or two
+  hours of each local day an unzoned clock reports yesterday and silently clamps out records
+  dated today.
 - `from` is clamped forwards to the earliest recorded transaction — there is no history before the
   first record.
 - The response echoes the **clamped** values, not the requested ones.

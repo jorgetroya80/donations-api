@@ -114,3 +114,13 @@ request for `to=2026-12-31` returns `to=2026-08-26`. Axis labels and any "perío
 use the echoed values.
 
 **`periods: []` is a valid empty state**, not an error — show "sin datos", not a failure message.
+
+**Default to a rolling window, not the calendar year.** A dashboard that asks for
+`from = January 1 of the current year` shows exactly one bucket, one day wide, at 00:00 on
+January 1 — correct per the contract, useless as a trend. Prefer:
+
+    from = today.minusMonths(11).withDayOfMonth(1)
+
+Twelve buckets always, and the December→January transition just slides one month off the left
+edge. A "this calendar year" toggle can still exist; it is only a poor default. (The API cannot
+choose this for you — that is exactly why `from` is required rather than defaulted.)
