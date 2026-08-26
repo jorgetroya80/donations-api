@@ -225,6 +225,49 @@ class FinancialReportsTest {
             .andExpect(jsonPath("$.periods[${expectedPeriods.toInt() - 1}].periodEnd").value(today.toString()))
     }
 
+    @Test
+    @DisplayName("Balance timeseries with a future from returns 400")
+    fun balanceTimeseriesWithFutureFromReturns400() {
+        // to clamps back to today, so a future from lands after it.
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", LocalDate.now().plusYears(1).toString())
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    @DisplayName("Operator accessing the balance timeseries returns 403")
+    fun operatorAccessingBalanceTimeseriesReturns403() {
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(operatorSession)
+                .param("from", "2026-01-01")
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isForbidden)
+    }
+
+    @Test
+    @DisplayName("Pastor can access the balance timeseries")
+    fun pastorCanAccessBalanceTimeseries() {
+        mockMvc.perform(
+            post("/api/v1/users")
+                .session(adminSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"pastor2","password":"password123","roles":["PASTOR"]}""")
+        ).andExpect(status().isCreated)
+
+        val pastorSession = TestAuth.loginActivated(mockMvc, "pastor2", "password123")
+
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(pastorSession)
+                .param("from", "2026-01-01")
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isOk)
+    }
+
     // --- Donor statement ---
 
     @Test

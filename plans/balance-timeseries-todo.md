@@ -74,12 +74,16 @@ Nothing blocked. One stop-and-ask: if Hibernate rejects `year()` / `month()` in 
 
 ## Phase 3: Edges, contract, docs
 
-- [ ] **Task 6 — Clamping, empty-DB and error-path tests** (XS · deps: 5)
-  - [ ] Over-wide range → both bounds clamped, no future periods
-  - [ ] OPERATOR 403, PASTOR 200
-  - [ ] Future `from` → 400
-  - [ ] Verify: `./gradlew test --tests "com.example.donations.FinancialReportsTest"`
-        (re-run once on a context-load failure — known flake)
+- [x] **Task 6 — Clamping, empty-DB and error-path tests** (XS · deps: 5)
+  - [x] Over-wide range → both bounds clamped, no future periods (landed with Task 5)
+  - [x] OPERATOR 403, PASTOR 200
+  - [x] Future `from` → 400
+  - [x] Empty ledger → `periods: []` — needed its own class, `BalanceTimeseriesEmptyDataTest`,
+        since `FinancialReportsTest` seeds donations and expenses in `@BeforeEach`
+  - [x] Verify: `FinancialReportsTest` 18/18, `BalanceTimeseriesEmptyDataTest` 1/1
+  - Gotcha for any future test class: the context cache key ignores `@DirtiesContext`, so a class
+    without it hands its mutated database to the next class — and `TestAuth.loginAsAdmin` rotates
+    the admin password, so the next class's login fails with a 401 that looks like a flake.
 
 - [ ] **Task 7 — `@Schema` descriptions** (XS · deps: 5)
   - [ ] Descriptions on `coverageRatio`, `periodStart`, `periodEnd` only
