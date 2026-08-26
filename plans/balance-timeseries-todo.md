@@ -31,13 +31,15 @@ Nothing blocked. One stop-and-ask: if Hibernate rejects `year()` / `month()` in 
 
 ## Phase 2: End-to-end path
 
-- [ ] **Task 3 — Repository queries** (S · deps: none)
-  - [ ] `sumByMonthAndDateBetween` + `minDonationDate` on `DonationRepository`
-  - [ ] Same two on `ExpenseRepository` over `expenseDate`
-  - [ ] JPQL only — no `nativeQuery = true`
-  - [ ] Verify: context loads (`./gradlew test --tests "…FinancialReportsTest"`)
-  - [ ] ⚠ If Hibernate rejects `year()` / `month()` in `GROUP BY`, stop and raise — do not switch
-        to native SQL unilaterally
+- [x] **Task 3 — Repository queries** (S · deps: none)
+  - [x] `sumByMonthAndDateBetween` + `minDonationDate` on `DonationRepository`
+  - [x] Same two on `ExpenseRepository` over `expenseDate`
+  - [x] JPQL only — no `nativeQuery = true`
+  - [x] Verify: context loads, `FinancialReportsTest` 12/12 green
+  - [x] ✅ Risk retired: Hibernate 7 accepts bare `year()` / `month()` in `SELECT` and `GROUP BY`;
+        queries validate at repository bootstrap. Rendering is proven by Task 5's integration test.
+  - Note: grouped rows must be folded as `(row[0] as Number).toInt()` — PostgreSQL `EXTRACT`
+    returns `numeric`, so the runtime type may be `BigDecimal` rather than `Integer`.
 
 - [ ] **Task 4 — Service orchestration and clamping** (S · deps: 1, 2, 3)
   - [ ] `to` clamped to today; `from` clamped to earliest record; clamped values echoed
