@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
+import org.springframework.beans.TypeMismatchException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -15,6 +16,7 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.core.AuthenticationException
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.ServletRequestBindingException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
@@ -67,6 +69,14 @@ class GlobalExceptionHandler(
     @ExceptionHandler(IllegalStateException::class)
     fun handleIllegalState(ex: IllegalStateException): ProblemDetail =
         problem(HttpStatus.CONFLICT, ex.message ?: "Conflict")
+
+    // Spring's own request-binding failures — a missing required query param, an
+    // unparseable date, an unknown enum value. They are caller errors, but they are
+    // not IllegalArgumentException, so without this the catch-all below claims them
+    // and reports 500.
+    @ExceptionHandler(ServletRequestBindingException::class, TypeMismatchException::class)
+    fun handleBadRequestBinding(ex: Exception): ProblemDetail =
+        problem(HttpStatus.BAD_REQUEST, "Invalid request parameter")
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgument(ex: IllegalArgumentException): ProblemDetail =
