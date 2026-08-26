@@ -3,6 +3,7 @@ package com.example.donations.report
 import com.example.donations.donation.DonationType
 import com.example.donations.donation.PaymentMethod
 import com.example.donations.expense.ExpenseCategory
+import com.fasterxml.jackson.annotation.JsonInclude
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -54,6 +55,11 @@ data class BalanceTimeseriesResponse(
         val totalIncome: BigDecimal,
         val totalExpenses: BigDecimal,
         val netBalance: BigDecimal,
+        // The global inclusion policy is non_null, which would drop this field entirely
+        // for a period with no expenses. An explicit null is the documented contract:
+        // it tells the consumer coverage is undefined rather than leaving it to infer
+        // that from a missing key.
+        @field:JsonInclude(JsonInclude.Include.ALWAYS)
         val coverageRatio: BigDecimal?,
     )
 }

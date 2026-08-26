@@ -41,18 +41,29 @@ Nothing blocked. One stop-and-ask: if Hibernate rejects `year()` / `month()` in 
   - Note: grouped rows must be folded as `(row[0] as Number).toInt()` — PostgreSQL `EXTRACT`
     returns `numeric`, so the runtime type may be `BigDecimal` rather than `Integer`.
 
-- [ ] **Task 4 — Service orchestration and clamping** (S · deps: 1, 2, 3)
-  - [ ] `to` clamped to today; `from` clamped to earliest record; clamped values echoed
-  - [ ] Empty database → `periods: []`
-  - [ ] `from > to` after clamping → 400 ProblemDetail
-  - [ ] `defaultYearRange` untouched
-  - [ ] Verify: `./gradlew build`
+- [x] **Task 4 — Service orchestration and clamping** (S · deps: 1, 2, 3)
+  - [x] `to` clamped to today; `from` clamped to earliest record; clamped values echoed
+  - [x] Empty database → `periods: []` (both min-dates null; one empty table is not enough)
+  - [x] `from > to` after clamping → 400 via `require(...)`, using the existing
+        `IllegalArgumentException` handler — no new exception class
+  - [x] `defaultYearRange` untouched
+  - [x] Verify: `FinancialReportsTest` 15/15 green
 
-- [ ] **Task 5 — Controller endpoint and first integration test** (S · deps: 4)
-  - [ ] `@GetMapping("/balance/timeseries")`, `from` required, `to` optional, `groupBy` required
-  - [ ] Authorization inherited from the class-level `@PreAuthorize` — no method annotation
-  - [ ] Integration test: three seeded months → three ordered periods, correct sums and ratios
-  - [ ] Verify: `./gradlew test --tests "com.example.donations.FinancialReportsTest"`
+- [x] **Task 5 — Controller endpoint and first integration test** (S · deps: 4)
+  - [x] `@GetMapping("/balance/timeseries")`, `from` required, `to` optional, `groupBy` required
+  - [x] Authorization inherited from the class-level `@PreAuthorize` — no method annotation
+  - [x] Integration test: three seeded months → three ordered periods, correct sums and ratios
+  - [x] Clamping test: over-wide range → both bounds clamped, no future periods (moved up from
+        Task 6, it fell out of the same fixture)
+  - [x] Verify: `FinancialReportsTest` 15/15 green
+  - Two contract issues surfaced and resolved:
+    - Missing/unparseable query params returned **500**, not 400 — the catch-all `Exception`
+      handler claimed Spring's binding exceptions. Fixed with one handler for
+      `ServletRequestBindingException` + `TypeMismatchException`. **Pre-existing, and it changes
+      the status every endpoint returns for a bad param. Flagged for Jorge.**
+    - `spring.jackson.default-property-inclusion: non_null` would have dropped `coverageRatio`
+      from the JSON entirely for a zero-expense month. Forced an explicit `null` with a
+      field-level `@JsonInclude(ALWAYS)`, matching the spec and the frontend contract.
 
 ### Checkpoint: End-to-end
 
