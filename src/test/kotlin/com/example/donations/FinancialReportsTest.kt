@@ -1,5 +1,6 @@
 package com.example.donations
 
+import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -16,10 +17,13 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestcontainersConfiguration::class)
+@Import(TestcontainersConfiguration::class, FixedClockConfiguration::class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @DisplayName("Financial Reports Tests")
 class FinancialReportsTest {
@@ -145,6 +149,168 @@ class FinancialReportsTest {
             .andExpect(jsonPath("$.totalIncome").value(350.00))
             .andExpect(jsonPath("$.totalExpenses").value(580.00))
             .andExpect(jsonPath("$.netBalance").value(-230.00))
+    }
+
+    // --- Balance timeseries ---
+
+    @Test
+    @DisplayName("Balance timeseries returns one ordered period per calendar month")
+    fun balanceTimeseriesReturnsMonthlyPeriods() {
+        // A second January donation proves the SQL aggregates within a month group
+        // rather than returning one row per donation.
+        createDonation(operatorSession, 25.00, "2026-01-20", "TITHE", "CASH", donorId)
+
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", "2026-01-01")
+                .param("to", "2026-03-31")
+                .param("groupBy", "MONTH")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.groupBy").value("MONTH"))
+            // from clamps forward to the earliest seeded transaction
+            .andExpect(jsonPath("$.from").value("2026-01-15"))
+            .andExpect(jsonPath("$.to").value("2026-03-31"))
+            .andExpect(jsonPath("$.periods.length()").value(3))
+            .andExpect(jsonPath("$.periods[0].periodStart").value("2026-01-15"))
+            .andExpect(jsonPath("$.periods[0].periodEnd").value("2026-01-31"))
+            .andExpect(jsonPath("$.periods[0].totalIncome").value(125.00))
+            .andExpect(jsonPath("$.periods[0].totalExpenses").value(500.00))
+            .andExpect(jsonPath("$.periods[0].netBalance").value(-375.00))
+            .andExpect(jsonPath("$.periods[0].coverageRatio").value(0.25))
+            .andExpect(jsonPath("$.periods[1].periodStart").value("2026-02-01"))
+            .andExpect(jsonPath("$.periods[1].periodEnd").value("2026-02-28"))
+            .andExpect(jsonPath("$.periods[1].totalIncome").value(200.00))
+            .andExpect(jsonPath("$.periods[1].totalExpenses").value(80.00))
+            .andExpect(jsonPath("$.periods[1].coverageRatio").value(2.5))
+            .andExpect(jsonPath("$.periods[2].periodStart").value("2026-03-01"))
+            .andExpect(jsonPath("$.periods[2].periodEnd").value("2026-03-31"))
+            .andExpect(jsonPath("$.periods[2].totalIncome").value(50.00))
+            .andExpect(jsonPath("$.periods[2].totalExpenses").value(0))
+            // No March expenses, so coverage is undefined: the field is present and null.
+            .andExpect(jsonPath("$.periods[2].coverageRatio").value(nullValue()))
+    }
+
+    @Test
+    @DisplayName("Balance timeseries without from returns 400")
+    fun balanceTimeseriesWithoutFromReturns400() {
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    @DisplayName("Balance timeseries with an unknown groupBy returns 400")
+    fun balanceTimeseriesWithUnknownGroupByReturns400() {
+        // An unbindable enum value is a MethodArgumentTypeMismatchException, not an
+        // IllegalArgumentException: without its own handler the catch-all reports 500.
+        // WEEK rather than gibberish, since it is the value ADR-006 says may be added later.
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", "2026-01-01")
+                .param("groupBy", "WEEK")
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    @DisplayName("Balance timeseries with an unparseable from returns 400")
+    fun balanceTimeseriesWithUnparseableFromReturns400() {
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", "notadate")
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    @DisplayName("Balance timeseries clamps an over-wide range to the recorded data and today")
+    fun balanceTimeseriesClampsOverWideRange() {
+        val today = FixedClockConfiguration.TODAY
+        val expectedPeriods = ChronoUnit.MONTHS.between(YearMonth.of(2026, 1), YearMonth.from(today)) + 1
+
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", "2020-01-01")
+                // Deliberately in the future so the clamp has something to clamp,
+                // whatever year the suite runs in.
+                .param("to", today.plusYears(1).toString())
+                .param("groupBy", "MONTH")
+        )
+            .andExpect(status().isOk)
+            // from clamps forward to the first transaction, to clamps back to today
+            .andExpect(jsonPath("$.from").value("2026-01-15"))
+            .andExpect(jsonPath("$.to").value(today.toString()))
+            .andExpect(jsonPath("$.periods.length()").value(expectedPeriods.toInt()))
+            .andExpect(jsonPath("$.periods[0].periodStart").value("2026-01-15"))
+            // The last period is clipped to today, so no period extends into the future
+            .andExpect(jsonPath("$.periods[${expectedPeriods.toInt() - 1}].periodEnd").value(today.toString()))
+    }
+
+    @Test
+    @DisplayName("Balance timeseries over a window that predates all records returns no periods")
+    fun balanceTimeseriesBeforeFirstRecordReturnsNoPeriods() {
+        // A well-formed question about a period the church has no records for. Clamping from
+        // forward must not turn it into an inverted range and a 400.
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", "2020-01-01")
+                .param("to", "2021-12-31")
+                .param("groupBy", "MONTH")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.from").value("2020-01-01"))
+            .andExpect(jsonPath("$.to").value("2021-12-31"))
+            .andExpect(jsonPath("$.periods.length()").value(0))
+    }
+
+    @Test
+    @DisplayName("Balance timeseries with a future from returns 400")
+    fun balanceTimeseriesWithFutureFromReturns400() {
+        // to clamps back to today, so a future from lands after it.
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", FixedClockConfiguration.TODAY.plusYears(1).toString())
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    @DisplayName("Operator accessing the balance timeseries returns 403")
+    fun operatorAccessingBalanceTimeseriesReturns403() {
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(operatorSession)
+                .param("from", "2026-01-01")
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isForbidden)
+    }
+
+    @Test
+    @DisplayName("Pastor can access the balance timeseries")
+    fun pastorCanAccessBalanceTimeseries() {
+        mockMvc.perform(
+            post("/api/v1/users")
+                .session(adminSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"username":"pastor2","password":"password123","roles":["PASTOR"]}""")
+        ).andExpect(status().isCreated)
+
+        val pastorSession = TestAuth.loginActivated(mockMvc, "pastor2", "password123")
+
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(pastorSession)
+                .param("from", "2026-01-01")
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isOk)
     }
 
     // --- Donor statement ---

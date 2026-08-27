@@ -24,6 +24,9 @@ server:
         http-only: true
         same-site: lax
 app:
+  # "Today" is answered in the church's zone, not the JVM default: the deploy target
+  # runs UTC, which is one to two hours behind local midnight.
+  timezone: ${APP_TIMEZONE:Europe/Madrid}
   cors:
     enabled: false
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:8080}

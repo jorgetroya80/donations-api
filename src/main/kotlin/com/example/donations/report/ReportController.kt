@@ -40,6 +40,15 @@ class ReportController(
         return reportService.balance(from, to)
     }
 
+    @GetMapping("/balance/timeseries")
+    fun balanceTimeseries(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate?,
+        @RequestParam groupBy: GroupBy,
+    ): BalanceTimeseriesResponse {
+        return reportService.balanceTimeseries(from, to, groupBy)
+    }
+
     @GetMapping("/donors/{id}/statement")
     fun donorStatement(
         @PathVariable id: Long,
