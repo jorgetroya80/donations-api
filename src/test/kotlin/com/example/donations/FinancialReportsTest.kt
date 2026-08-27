@@ -203,6 +203,31 @@ class FinancialReportsTest {
     }
 
     @Test
+    @DisplayName("Balance timeseries with an unknown groupBy returns 400")
+    fun balanceTimeseriesWithUnknownGroupByReturns400() {
+        // An unbindable enum value is a MethodArgumentTypeMismatchException, not an
+        // IllegalArgumentException: without its own handler the catch-all reports 500.
+        // WEEK rather than gibberish, since it is the value ADR-006 says may be added later.
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", "2026-01-01")
+                .param("groupBy", "WEEK")
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    @DisplayName("Balance timeseries with an unparseable from returns 400")
+    fun balanceTimeseriesWithUnparseableFromReturns400() {
+        mockMvc.perform(
+            get("/api/v1/reports/balance/timeseries")
+                .session(treasurerSession)
+                .param("from", "notadate")
+                .param("groupBy", "MONTH")
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
     @DisplayName("Balance timeseries clamps an over-wide range to the recorded data and today")
     fun balanceTimeseriesClampsOverWideRange() {
         val today = FixedClockConfiguration.TODAY

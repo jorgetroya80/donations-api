@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
-import org.springframework.beans.TypeMismatchException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -19,6 +18,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
 @RestControllerAdvice
 class GlobalExceptionHandler(
@@ -75,11 +75,16 @@ class GlobalExceptionHandler(
     // not IllegalArgumentException, so without this the catch-all below claims them
     // and reports 500.
     //
-    // Deliberately not the shared parent ServletRequestBindingException: that would also
-    // capture MissingPathVariableException, which means a @PathVariable does not match its
-    // URI template — a mapping bug of ours, and a 500 by design. It stays with the catch-all,
-    // which logs it.
-    @ExceptionHandler(MissingServletRequestParameterException::class, TypeMismatchException::class)
+    // Both types are named narrowly on purpose, because each has a parent that would drag a
+    // fault of ours in with it, and neither is anything a caller can fix:
+    //   - not ServletRequestBindingException, the parent of the missing-param case: it also
+    //     covers MissingPathVariableException, which means a @PathVariable does not match its
+    //     URI template — a mapping bug.
+    //   - not TypeMismatchException, the parent of the mismatch case: it also covers
+    //     ConversionNotSupportedException, which means no converter is registered for a handler
+    //     parameter's type — a wiring bug, and a 500 in Spring's own handler too.
+    // Both stay with the catch-all, which logs them and emits UnexpectedError.
+    @ExceptionHandler(MissingServletRequestParameterException::class, MethodArgumentTypeMismatchException::class)
     fun handleBadRequestBinding(ex: Exception): ProblemDetail =
         problem(HttpStatus.BAD_REQUEST, "Invalid request parameter")
 
