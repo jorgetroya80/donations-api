@@ -1,6 +1,8 @@
 package com.example.donations.infrastructure.config
 
+import jakarta.validation.ClockProvider
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.validation.autoconfigure.ValidationConfigurationCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.time.Clock
@@ -18,4 +20,16 @@ class TimeConfig {
 
     @Bean
     fun clock(@Value("\${app.timezone}") zone: String): Clock = Clock.system(ZoneId.of(zone))
+
+    /**
+     * Bean Validation keeps its own clock, defaulting to `Clock.systemDefaultZone()`, so without
+     * this `@PastOrPresent` would answer "is this in the future?" in the JVM's zone while the
+     * reports answer "what is today?" in the church's. Early on a local morning the two disagree
+     * and a donation dated today is rejected as future.
+     */
+    @Bean
+    fun validationClockProvider(clock: Clock): ValidationConfigurationCustomizer =
+        ValidationConfigurationCustomizer { configuration ->
+            configuration.clockProvider(ClockProvider { clock })
+        }
 }

@@ -146,6 +146,41 @@ Five-axis review of the branch found two correctness issues and one regression, 
       today)` for its short-circuit.
 - [x] Verify: 238 tests green (19 unit, 19 + 2 integration), `./gradlew build` clean.
 
-Left open from the review, not requested: the 400 body says "Invalid request parameter" without
-naming the parameter, and `DeployPortBindingTest` asserts the literal `Europe/Madrid`, so it fails
-on a machine with `APP_TIMEZONE` set.
+## Second review pass (spring-boot-engineer, 2026-08-27)
+
+A Spring-specialist review of the same diff confirmed all 9 acceptance criteria trace to real
+assertions, and found three issues worth fixing. Its top three matched an independent `/code-review`
+run — the same findings from two different framings.
+
+- [x] **Converter faults no longer masquerade as caller errors.** The binding handler caught
+      `TypeMismatchException`, whose subtree includes `ConversionNotSupportedException` — "no
+      converter registered", a wiring bug Spring itself reports as 500. Narrowed to
+      `MethodArgumentTypeMismatchException`. Added the two missing tests (unknown `groupBy`,
+      unparseable `from`): only the missing-parameter path was pinned, so three of the four paths
+      this handler governs would have stayed green if the narrowing had named the wrong type.
+- [x] **The zone fix now covers the write side too.** `@PastOrPresent` resolved "present" through
+      Bean Validation's own `Clock.systemDefaultZone()`, so on a UTC container a donation dated
+      today in Madrid was rejected as future between 00:00 and 02:00 local — the same bug the
+      reports were fixed for. A `ValidationConfigurationCustomizer` in `TimeConfig` binds the
+      validator's clock provider to the application clock. `ValidationClockZoneTest` proves it with
+      a clock pinned to an instant that is already tomorrow in Pacific/Auckland but still today in
+      both UTC and Europe/Madrid, so it fails on CI and on a Spanish laptop alike if the zone is
+      ignored.
+- [x] **The 2027 rot is fully retired.** `FixedClockConfiguration` reached only 2 of the 4 classes
+      that seed dates; `DonationRecordingTest` and `ExpenseRecordingTest` seed 2026 dates and then
+      call list endpoints that fall through `defaultYearRange`, so their assertions would have gone
+      to 0 on 2027-01-01. Both are pinned now.
+- [x] Verify: 242 tests green, `./gradlew build` clean.
+
+Declined, with reasons: a regression test for the `ConversionNotSupportedException` exclusion would
+need a converter-less parameter type on a test-only `@RestController`, which every `@SpringBootTest`
+here would component-scan into its context — permanent surface area to prove one status code on a
+path no current endpoint can reach. The exclusion is enforced by the catch-all being the default and
+by the comment at the point of edit.
+
+Still open from the reviews, not requested: the 400 body says "Invalid request parameter" without
+naming the parameter; `DeployPortBindingTest` asserts the literal `Europe/Madrid`, so it fails on a
+machine with `APP_TIMEZONE` set; zero-filled buckets emit scale-0 money (`0`, not `0.00`) while the
+spec claims `DECIMAL(10,2)` scale throughout; the two `MIN()` queries run before the request is
+validated; `LoginAttemptService`'s now-unreachable `Clock.systemUTC()` default; and ADR-006 cites
+line numbers this PR's own edits moved.
