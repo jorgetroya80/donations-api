@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/jorgetroya80/donations-api/compare/v2.1.0...v2.2.0) (2026-09-21)
+
+
+### Features
+
+* upgrade Kotlin to 2.4.20 ([#53](https://github.com/jorgetroya80/donations-api/issues/53)) ([eb13e79](https://github.com/jorgetroya80/donations-api/commit/eb13e79b7bfe6e495d09e06121bb7325d0c25d2e))
+
 ## [2.1.0](https://github.com/jorgetroya80/donations-api/compare/v2.0.0...v2.1.0) (2026-08-05)
 
 
