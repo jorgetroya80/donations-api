@@ -1,7 +1,7 @@
 plugins {
-	id 'org.jetbrains.kotlin.jvm' version '2.2.21'
-	id 'org.jetbrains.kotlin.plugin.spring' version '2.2.21'
-	id 'org.jetbrains.kotlin.plugin.jpa' version '2.2.21'
+	id 'org.jetbrains.kotlin.jvm' version '2.4.20'
+	id 'org.jetbrains.kotlin.plugin.spring' version '2.4.20'
+	id 'org.jetbrains.kotlin.plugin.jpa' version '2.4.20'
 	id 'org.springframework.boot' version '4.0.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'org.graalvm.buildtools.native' version '0.11.5'
@@ -10,6 +10,12 @@ plugins {
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
+
+// Spring Boot's BOM pins kotlin-stdlib, kotlin-reflect and kotlin-test to its own Kotlin
+// version (2.2.21 in Boot 4.0.5), which io.spring.dependency-management then applies. Without
+// this override the plugins above would run a 2.4.20 compiler against a 2.2.21 standard
+// library, which only produces a warning.
+ext['kotlin.version'] = '2.4.20'
 
 java {
 	toolchain {
@@ -45,6 +51,12 @@ dependencies {
 
 kotlin {
 	compilerOptions {
+		// The compiler moves to 2.4; the language level stays at 2.2 so the toolchain upgrade and
+		// the language-level move are separate, revertable changes. Raising these two lines is the
+		// whole of that later move — and it is what makes the annotation-default-target flag below
+		// redundant, so drop the flag at the same time.
+		languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2
+		apiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2
 		freeCompilerArgs.addAll '-Xjsr305=strict', '-Xannotation-default-target=param-property'
 	}
 }

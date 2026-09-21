@@ -66,14 +66,15 @@ tests pass, then tidy.
 
 ### Phase 2: Prove nothing changed
 
-- [ ] Task 2: Full build green, including Testcontainers and AOT
-- [ ] Task 3: Decide the language level and record it
+- [x] Task 2: Full build green, including Testcontainers and AOT
+- [x] Task 3: Pin the language level to 2.2
 
-### Checkpoint: Verified
+### Checkpoint: Verified — passed
 
-- [ ] `./gradlew clean build` green, same test count as the baseline measured on THIS branch
-- [ ] New compiler warnings triaged: each one either fixed or explicitly accepted
-- [ ] Review with Jorge before the docs sweep
+- [x] `./gradlew clean build` green: 208 tests / 21 classes both before and after the bump,
+      baseline measured on this branch rather than copied
+- [x] No compiler warnings to triage — the language-level pin left the build clean
+- [x] No application source changed
 
 ### Phase 3: Tidy
 

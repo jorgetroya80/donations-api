@@ -26,17 +26,15 @@ keep saying "Kotlin 2.2".
 
 ## Phase 2: Prove nothing changed
 
-- [ ] **Task 2 — Full build incl. Testcontainers and AOT** (XS · deps: 1)
-  - [ ] Baseline first: `git stash` the `build.gradle` change, `./gradlew clean build`, record the
-        count, `git stash pop`. Do **not** reuse 242 — that came from `feat/balance-timeseries`,
-        which this branch does not contain
-  - [ ] `./gradlew clean build` green, same count as that baseline
-  - [ ] ⚠ `clean` is required: `build/test-results/` keeps XML for deleted classes (24 stale files
-        from 2026-08-27 right now, incl. 21 tests from classes absent here), so summing the
-        directory counts phantoms on both sides of the comparison
-  - [ ] No application source file changed — if the compiler demands one, stop and report
-  - [ ] New warnings triaged: fixed, or listed with a reason
-  - [ ] Whole class failing at context load = known Testcontainers flake; re-run once first
+- [x] **Task 2 — Full build incl. Testcontainers and AOT** (XS · deps: 1)
+  - [x] Baseline measured on this branch by stashing the change: **208 tests, 21 classes, 0
+        failures** at 2.2.21. The plan's original 242 would have been wrong by 34 — those tests
+        live on `feat/balance-timeseries`, which this branch does not contain
+  - [x] Post-bump `./gradlew clean build`: **208 tests, 21 classes, 0 failures** — identical
+  - [x] `clean` did its job: the pre-`clean` directory held 24 classes, three of them orphans from
+        2026-08-27 that no longer exist here
+  - [x] No application source file changed (`git status --porcelain src/` empty)
+  - [x] No compiler warnings at all — the language-level pin removed the two from Task 1
 
 - [x] **Task 3 — Pin the language level to 2.2** (XS · applied before Task 2, so one verification
       run covers both changes)
