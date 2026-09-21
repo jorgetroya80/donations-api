@@ -51,13 +51,10 @@ dependencies {
 
 kotlin {
 	compilerOptions {
-		// The compiler moves to 2.4; the language level stays at 2.2 so the toolchain upgrade and
-		// the language-level move are separate, revertable changes. Raising these two lines is the
-		// whole of that later move — and it is what makes the annotation-default-target flag below
-		// redundant, so drop the flag at the same time.
-		languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2
-		apiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2
-		freeCompilerArgs.addAll '-Xjsr305=strict', '-Xannotation-default-target=param-property'
+		// -Xannotation-default-target=param-property was a 2.2-era migration flag: it opted in
+		// early to the annotation placement 2.4 now applies by default, so at language level 2.4
+		// it is redundant and the compiler says so. Dropped rather than silenced.
+		freeCompilerArgs.addAll '-Xjsr305=strict'
 	}
 }
 

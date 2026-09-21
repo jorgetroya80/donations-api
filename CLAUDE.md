@@ -74,7 +74,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Tech Stack
 
-- **Language:** Kotlin 2.4 on Java 24 (Temurin), compiled at language level 2.2
+- **Language:** Kotlin 2.4 on Java 24 (Temurin)
 - **Framework:** Spring Boot 4.0.5 with Spring MVC
 - **Build:** Gradle 9.4.1 (Groovy DSL) — use `./gradlew`, not a global install
 - **Database:** PostgreSQL 18.3 (via Docker Compose)

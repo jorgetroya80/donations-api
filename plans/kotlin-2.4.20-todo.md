@@ -3,8 +3,9 @@
 Plan: [kotlin-2.4.20.md](kotlin-2.4.20.md)
 
 Nothing blocked. Decisions (Jorge, 2026-09-21): PR #52 is left alone and this branch does not wait
-for it; no ADR; language level pinned to 2.2 with the language-level move deferred; historical docs
-keep saying "Kotlin 2.2".
+for it; no ADR; **language level moves to 2.4 along with the compiler** (reversing an earlier pin —
+the point of the upgrade is to learn whether the codebase runs on 2.4); historical docs keep saying
+"Kotlin 2.2".
 
 ## Phase 1: Make it compile
 
@@ -36,13 +37,14 @@ keep saying "Kotlin 2.2".
   - [x] No application source file changed (`git status --porcelain src/` empty)
   - [x] No compiler warnings at all — the language-level pin removed the two from Task 1
 
-- [x] **Task 3 — Pin the language level to 2.2** (XS · applied before Task 2, so one verification
-      run covers both changes)
-  - [x] `languageVersion` and `apiVersion` = `KOTLIN_2_2`, with a comment saying that raising them
-        is the whole of the deferred language-level move
-  - [x] `-Xannotation-default-target=param-property` kept — meaningful again at 2.2, and the
-        redundancy warnings are gone. Delete it when the language level moves
-  - [x] Verify: `./gradlew compileKotlin compileTestKotlin --rerun-tasks` clean, no warnings
+- [x] **Task 3 — Adopt language level 2.4** (XS · pinned to 2.2 first, then unpinned on Jorge's
+      call: a pin would have left the actual question — does this codebase work on 2.4? — untested)
+  - [x] No `languageVersion` / `apiVersion` pin; compiler defaults apply
+  - [x] `-Xannotation-default-target=param-property` deleted, not silenced: 2.4 applies that
+        annotation placement by default
+  - [x] Verify: `./gradlew clean build` at 2.4 → 208 tests / 21 classes, 0 failures, no warnings,
+        no source change. Annotation placement is covered for real, since the suite asserts
+        validation rejections, JPA persistence and Jackson serialization
 
 ### Checkpoint: Verified
 
@@ -79,6 +81,9 @@ keep saying "Kotlin 2.2".
 
 ## Deferred, not forgotten
 
-- **The language-level move to 2.4**: raise the two `KOTLIN_2_2` lines and delete the
-  `-Xannotation-default-target` flag. Its own change, its own verification.
 - **PR #52's rebase** across this `build.gradle` change, whenever the second of the two merges.
+- **Native image** is unverified project-wide: `nativeCompile` runs in no workflow. Wire it into CI
+  or drop the `org.graalvm.buildtools.native` plugin.
+- **Spring Boot's own Kotlin expectations** — Boot 4.0.5 ships a BOM pinned to Kotlin 2.2.21, and
+  we override it. Worth checking, when a Boot upgrade next comes up, whether it wants anything from
+  a 2.4 toolchain that this override is papering over.

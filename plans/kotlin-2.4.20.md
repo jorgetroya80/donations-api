@@ -17,16 +17,16 @@ No application behaviour should change. Success is: same tests, same build outpu
   currently resolves `kotlin-stdlib:2.2.21`). Bumping only the plugins leaves a 2.4.20 compiler
   compiling against a 2.2.21 standard library. The fix is `ext['kotlin.version'] = '2.4.20'` in
   `build.gradle`, which `io.spring.dependency-management` reads.
-- **Language level stays at 2.2** (Jorge, 2026-09-21). The compiler moves to 2.4;
-  `languageVersion` and `apiVersion` are pinned to `KOTLIN_2_2`, so this change is a toolchain
-  upgrade only and the language-level move is a separate, separately-revertable piece of work.
-  Raising those two lines — and dropping the then-redundant `-Xannotation-default-target` flag — is
-  the whole of that later change.
+- **Language level moves to 2.4 as well** (Jorge, 2026-09-21, reversing an earlier decision to
+  pin it). The point of the upgrade is to find out whether the codebase works on 2.4, and a pinned
+  language level answers that question only for the compiler, not for the semantics. Nothing is
+  pinned: no `languageVersion`, no `apiVersion`, and the `-Xannotation-default-target` flag is
+  deleted rather than silenced, since 2.4 applies that placement by default.
 - **`freeCompilerArgs` was the likeliest breakage, and it held.** `-Xannotation-default-target=param-property`
-  is a 2.2-era migration flag; 2.4 kept it but made the behaviour default, so at language level 2.4
-  it warned as redundant once per compile task. With the language level pinned to 2.2 the flag is
-  meaningful again and the warnings are gone. It becomes redundant — and should be deleted — only
-  when the language level moves.
+  was a 2.2-era flag opting in early to the annotation placement 2.4 now applies by default, so at
+  language level 2.4 the compiler reports it as redundant. Deleted. This mattered more than a
+  warning suggests: annotation placement decides whether Bean Validation, JPA and Jackson see a
+  constraint at all, and the suite exercises all three.
 - **No new dependencies, no source changes expected.** If the upgrade requires editing application
   code, that is a finding to report, not something to absorb quietly into this work.
 
@@ -159,23 +159,27 @@ pre-existing warnings — that is unrelated cleanup (CLAUDE.md §3).
 
 ---
 
-## Task 3: Pin the language level to 2.2 — DONE
+## Task 3: Adopt language level 2.4 — DONE
 
-**Description:** Decided by Jorge before Task 2 rather than after it, which is why it is applied
-first: pinning now means one verification run covers both changes instead of two. `languageVersion`
-and `apiVersion` are set to `KOTLIN_2_2` in `kotlin { compilerOptions { … } }`, with a comment
-stating that raising them is the whole of the deferred language-level move.
+**Description:** Briefly pinned to 2.2, then unpinned on Jorge's call: pinning would have answered
+"does the 2.4 compiler build this?" while leaving "does this codebase work on 2.4?" untested, and
+the second question is the reason for the upgrade. `languageVersion` and `apiVersion` are absent,
+so the compiler's own defaults (2.4) apply, and `-Xannotation-default-target=param-property` is
+deleted because 2.4 applies that placement by default.
 
 **Acceptance criteria:**
-- [x] Both pinned to `KOTLIN_2_2`, with a comment saying what the later move consists of.
-- [x] The `-Xannotation-default-target` redundancy warnings are gone (the flag is meaningful again
-      at language level 2.2).
+- [x] No `languageVersion` / `apiVersion` pin; `freeCompilerArgs` keeps only `-Xjsr305=strict`.
+- [x] No compiler warnings — the redundant flag is gone rather than silenced.
+- [x] The full suite passes at language level 2.4, not merely compiles.
 
 **Verification:**
-- [x] `./gradlew compileKotlin compileTestKotlin --rerun-tasks` — clean, no warnings. `--rerun-tasks`
-      because the first run finished in 3s and a silent UP-TO-DATE would have looked like success.
+- [x] `./gradlew clean build` at language level 2.4: 208 tests / 21 classes, 0 failures — identical
+      to the 2.2.21 baseline, with no application source changed.
+- [x] The annotation-placement default change is genuinely covered: the suite asserts validation
+      rejections, JPA persistence and Jackson serialization, which is where a mis-targeted
+      annotation would go quiet.
 
-**Dependencies:** none as it turned out — the decision came from Jorge, not from Task 2's output
+**Dependencies:** none — the decision came from Jorge, not from Task 2's output
 
 **Files likely touched:**
 - `build.gradle` (only if pinning)
