@@ -26,4 +26,14 @@ interface ExpenseRepository : JpaRepository<Expense, Long> {
             "WHERE e.expenseDate BETWEEN :from AND :to"
     )
     fun sumAmountByDateBetween(from: LocalDate, to: LocalDate): BigDecimal?
+
+    @Query(
+        "SELECT year(e.expenseDate), month(e.expenseDate), SUM(e.amount) FROM Expense e " +
+            "WHERE e.expenseDate BETWEEN :from AND :to " +
+            "GROUP BY year(e.expenseDate), month(e.expenseDate)"
+    )
+    fun sumByMonthAndDateBetween(from: LocalDate, to: LocalDate): List<Array<Any>>
+
+    @Query("SELECT MIN(e.expenseDate) FROM Expense e")
+    fun minExpenseDate(): LocalDate?
 }

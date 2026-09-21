@@ -12,6 +12,8 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.Clock
+import java.time.ZoneId
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -72,10 +74,28 @@ class DeployPortBindingTest {
     @Autowired
     private lateinit var environment: Environment
 
+    @Autowired
+    private lateinit var clock: Clock
+
     @Test
     @DisplayName("server.port resolves from the PORT property")
     fun serverPortBindsFromPortVar() {
         assertEquals("12345", environment.getProperty("server.port"))
+    }
+
+    /**
+     * Render runs the container in UTC while the church keeps Europe/Madrid time, so "today"
+     * must come from a configured zone rather than the JVM default: otherwise, for the first
+     * hour or two of every local day, a donation dated today is clamped out of the reports as
+     * if it were in the future, and the New Year rollover misfiles a whole day.
+     *
+     * Asserted against the literal zone, not ZoneId.systemDefault(): on a developer's Madrid
+     * laptop that comparison would pass for the wrong reason.
+     */
+    @Test
+    @DisplayName("the clock is zoned to the church, not the JVM default")
+    fun clockUsesConfiguredZone() {
+        assertEquals(ZoneId.of("Europe/Madrid"), clock.zone)
     }
 
     /**

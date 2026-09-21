@@ -43,6 +43,16 @@ interface DonationRepository : JpaRepository<Donation, Long> {
     )
     fun sumAmountByDateBetween(from: LocalDate, to: LocalDate): BigDecimal?
 
+    @Query(
+        "SELECT year(d.donationDate), month(d.donationDate), SUM(d.amount) FROM Donation d " +
+            "WHERE d.donationDate BETWEEN :from AND :to " +
+            "GROUP BY year(d.donationDate), month(d.donationDate)"
+    )
+    fun sumByMonthAndDateBetween(from: LocalDate, to: LocalDate): List<Array<Any>>
+
+    @Query("SELECT MIN(d.donationDate) FROM Donation d")
+    fun minDonationDate(): LocalDate?
+
     fun findByDonorIdAndDonationDateBetween(
         donorId: Long,
         from: LocalDate,

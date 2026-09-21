@@ -61,6 +61,19 @@ class OpenApiTest {
             .andExpect(jsonPath("$.paths['/api/v1/reports/donations']").exists())
             .andExpect(jsonPath("$.paths['/api/v1/reports/expenses']").exists())
             .andExpect(jsonPath("$.paths['/api/v1/reports/balance']").exists())
+            .andExpect(jsonPath("$.paths['/api/v1/reports/balance/timeseries']").exists())
             .andExpect(jsonPath("$.paths['/api/v1/reports/donors/{id}/statement']").exists())
+    }
+
+    @Test
+    @DisplayName("Timeseries period fields carry the semantics a field name cannot convey")
+    fun timeseriesPeriodFieldsAreDocumented() {
+        val period = "$.components.schemas.PeriodBalance.properties"
+
+        mockMvc.perform(get("/v3/api-docs"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$period.coverageRatio.description").isNotEmpty)
+            .andExpect(jsonPath("$period.periodStart.description").isNotEmpty)
+            .andExpect(jsonPath("$period.periodEnd.description").isNotEmpty)
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 import java.time.LocalDate
 
 @Service
@@ -16,10 +17,11 @@ import java.time.LocalDate
 class ExpenseService(
     private val expenseRepository: ExpenseRepository,
     private val eventLogger: EventLogger,
+    private val clock: Clock,
 ) {
 
     fun listExpenses(pageable: Pageable, from: LocalDate?, to: LocalDate?): Page<Expense> {
-        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
+        val (effectiveFrom, effectiveTo) = defaultYearRange(from, to, clock)
         return expenseRepository.findByExpenseDateBetween(effectiveFrom, effectiveTo, pageable)
     }
 
