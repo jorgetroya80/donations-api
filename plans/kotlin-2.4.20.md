@@ -78,13 +78,13 @@ tests pass, then tidy.
 
 ### Phase 3: Tidy
 
-- [ ] Task 4: Update the stack version in docs
-- [ ] Task 5: Confirm CI, and decide on the native image check
+- [x] Task 4: Update the stack version in docs
+- [x] Task 5: Confirm CI, and decide on the native image check
 
 ### Checkpoint: Complete
 
-- [ ] CI green — blocked: `ci.yml` only triggers on `main` pushes and PRs targeting `main`, so a
-      branch push runs nothing. Needs a PR
+- [x] CI green on PR #53. The block was real and is now documented: `ci.yml` triggers only on
+      `main` pushes and PRs targeting `main`, so a branch push runs nothing
 - [x] No stale "Kotlin 2.2" in current docs
 - [x] Report to Jorge
 

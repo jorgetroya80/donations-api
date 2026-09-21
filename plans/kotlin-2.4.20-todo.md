@@ -58,23 +58,24 @@ keep saying "Kotlin 2.2".
   - [x] Verify: the only remaining "Kotlin 2.2" mentions are that historical plan and these two
         planning documents, which describe the upgrade itself
 
-- [~] **Task 5 — CI + native decision** (XS · deps: 2)
+- [x] **Task 5 — CI + native decision** (XS · deps: 2)
   - [x] No workflow change needed: `ci.yml` pins Java 24 and sets up Gradle, with no Kotlin version
         of its own, so the plugin bump carries the compiler
-  - [ ] **CI has not run and cannot run on this branch as pushed.** `ci.yml` triggers only on
-        `push: [main]` and `pull_request: [main]` (lines 3-7), so pushing `chore/kotlin-2.4.20`
-        produced no run — confirmed, the three most recent runs all belong to
-        `feat/balance-timeseries`, which has a PR. Verifying CI requires opening a PR. **Waiting on
-        Jorge.**
+  - [x] **CI green on PR #53** (`./gradlew check`, run 35634388239, success). Note for next time:
+        `ci.yml` triggers only on `push: [main]` and `pull_request: [main]` (lines 3-7), so a pushed
+        branch with no PR runs nothing at all — opening the PR is what made CI execute
+  - [x] Unrelated annotation on the run, worth knowing but not acting on here: `ubuntu-latest`
+        migrates to Ubuntu 26 from 2026-10-19
   - [x] Native: **skipped, deliberately.** `nativeCompile` runs in no workflow, so native is
         unverified on every commit, not just this one. Running it here would take ~10 minutes to
         test something this change did not touch, and a failure would most likely be pre-existing
         and indistinguishable from an upgrade regression. Worth its own ticket: either wire it into
         CI or drop the plugin
 
-### Checkpoint: Complete
+### Checkpoint: Complete — passed
 
-- [ ] CI green, docs current, report to Jorge — **do not commit unless he says so**
+- [x] CI green on [PR #53](https://github.com/jorgetroya80/donations-api/pull/53), docs current,
+      all five tasks committed (Jorge approved per-task commits for this run)
 
 ## Deferred, not forgotten
 
