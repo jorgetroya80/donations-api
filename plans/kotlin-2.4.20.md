@@ -83,9 +83,10 @@ tests pass, then tidy.
 
 ### Checkpoint: Complete
 
-- [ ] CI green on the branch
-- [ ] No stale "Kotlin 2.2" in current docs
-- [ ] Report to Jorge
+- [ ] CI green — blocked: `ci.yml` only triggers on `main` pushes and PRs targeting `main`, so a
+      branch push runs nothing. Needs a PR
+- [x] No stale "Kotlin 2.2" in current docs
+- [x] Report to Jorge
 
 ---
 

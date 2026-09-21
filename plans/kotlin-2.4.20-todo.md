@@ -58,9 +58,19 @@ keep saying "Kotlin 2.2".
   - [x] Verify: the only remaining "Kotlin 2.2" mentions are that historical plan and these two
         planning documents, which describe the upgrade itself
 
-- [ ] **Task 5 — CI + native decision** (XS · deps: 2)
-  - [ ] CI green with no workflow change (it pins Java 24 only, no Kotlin version)
-  - [ ] Decide whether to run `./gradlew nativeCompile` once — it is in no workflow today
+- [~] **Task 5 — CI + native decision** (XS · deps: 2)
+  - [x] No workflow change needed: `ci.yml` pins Java 24 and sets up Gradle, with no Kotlin version
+        of its own, so the plugin bump carries the compiler
+  - [ ] **CI has not run and cannot run on this branch as pushed.** `ci.yml` triggers only on
+        `push: [main]` and `pull_request: [main]` (lines 3-7), so pushing `chore/kotlin-2.4.20`
+        produced no run — confirmed, the three most recent runs all belong to
+        `feat/balance-timeseries`, which has a PR. Verifying CI requires opening a PR. **Waiting on
+        Jorge.**
+  - [x] Native: **skipped, deliberately.** `nativeCompile` runs in no workflow, so native is
+        unverified on every commit, not just this one. Running it here would take ~10 minutes to
+        test something this change did not touch, and a failure would most likely be pre-existing
+        and indistinguishable from an upgrade regression. Worth its own ticket: either wire it into
+        CI or drop the plugin
 
 ### Checkpoint: Complete
 
