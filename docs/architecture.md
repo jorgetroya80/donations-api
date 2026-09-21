@@ -1,6 +1,6 @@
 # Software Architecture — Donations API v1
 
-**Version:** 1.5.0 | **Stack:** Kotlin 2.2 · Spring Boot 4.0.5 · PostgreSQL 18.3
+**Version:** 1.5.0 | **Stack:** Kotlin 2.4 · Spring Boot 4.0.5 · PostgreSQL 18.3
 
 ---
 
@@ -65,7 +65,7 @@ graph TB
 
     subgraph "Docker Host"
         subgraph "API Container  :8081"
-            APP[Spring Boot App<br/>Kotlin 2.2 / JVM 24]
+            APP[Spring Boot App<br/>Kotlin 2.4 / JVM 24]
             SW[Swagger UI<br/>/swagger-ui/index.html]
             ACT[Actuator<br/>/actuator/health]
         end
