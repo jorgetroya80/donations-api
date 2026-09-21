@@ -50,10 +50,13 @@ keep saying "Kotlin 2.2".
 
 ## Phase 3: Tidy
 
-- [ ] **Task 4 — Docs** (XS · deps: none, sequenced last)
-  - [ ] `README.md:7`, `CLAUDE.md:77`, `docs/architecture.md:3` and `:68`
-  - [ ] Leave historical plans alone (`docs/donor-search.md:41`, `plans/*`)
-  - [ ] Verify: `grep -rn "Kotlin 2\.2" --include="*.md" .` returns only historical docs
+- [x] **Task 4 — Docs** (XS · deps: none, sequenced last)
+  - [x] `README.md:7`, `CLAUDE.md:77`, `docs/architecture.md:3` and `:68` now say Kotlin 2.4
+  - [x] `CLAUDE.md` also states the language level, since a future reader compiling at 2.2 on a 2.4
+        toolchain would otherwise find the flag list confusing
+  - [x] Historical docs left alone per Decision 4: `docs/donor-search.md` still says 2.2
+  - [x] Verify: the only remaining "Kotlin 2.2" mentions are that historical plan and these two
+        planning documents, which describe the upgrade itself
 
 - [ ] **Task 5 — CI + native decision** (XS · deps: 2)
   - [ ] CI green with no workflow change (it pins Java 24 only, no Kotlin version)
