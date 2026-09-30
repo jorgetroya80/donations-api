@@ -294,6 +294,9 @@ class SecurityIntegrationTest {
         )
             .andExpect(status().isForbidden)
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.status").value(403))
+            .andExpect(jsonPath("$.title").value("Forbidden"))
+            .andExpect(jsonPath("$.instance").value("/api/v1/users"))
             .andExpect(jsonPath("$.detail").value("Password change required"))
             .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
 

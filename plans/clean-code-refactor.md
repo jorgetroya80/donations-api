@@ -30,7 +30,7 @@ Each task = one refactor across all its call sites, left green.
 - [ ] Review with Jorge
 
 ### Phase 2: Duplication + polish
-- [ ] T3: Shared problem-JSON writer
+- [x] T3: Shared problem-JSON writer
 - [ ] T4: `AuthService.login` split + shared `ROLE_PREFIX`
 - [ ] T5: `ReportService` `orZero()`
 
