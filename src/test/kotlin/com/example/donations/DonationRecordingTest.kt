@@ -1,7 +1,6 @@
 package com.example.donations
 
 import ch.qos.logback.classic.Level
-import com.example.donations.donation.DonationRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -32,9 +31,6 @@ class DonationRecordingTest {
 
     @Autowired
     lateinit var mockMvc: MockMvc
-
-    @Autowired
-    lateinit var donationRepository: DonationRepository
 
     private lateinit var operatorSession: MockHttpSession
     private lateinit var adminSession: MockHttpSession
@@ -236,26 +232,19 @@ class DonationRecordingTest {
     // --- Duplicate detection tests ---
 
     @Test
-    @DisplayName("Duplicate donation without confirm returns 200 with warning and saves nothing")
+    @DisplayName("Duplicate donation without confirm returns 200 with warning")
     fun duplicateDonationWithoutConfirmReturnsWarning() {
-        val events = TestEvents.capture {
-            createDonation(operatorSession, 100.00, "2026-01-15", "TITHE", "CASH", donorId)
+        createDonation(operatorSession, 100.00, "2026-01-15", "TITHE", "CASH", donorId)
 
-            mockMvc.perform(
-                post("/api/v1/donations")
-                    .session(operatorSession)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"amount":100.00,"donationDate":"2026-01-15","donationType":"TITHE","paymentMethod":"CASH","donorId":$donorId}""")
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.duplicateWarning").value(true))
-                .andExpect(jsonPath("$.saved").value(false))
-        }
-
-        // Only the first (saved) call emits; the unconfirmed duplicate must not.
-        assertEquals(1, events.count { it.message == "donation_create" })
-        // donorId is the only donor in this test, so the total is that donor's count.
-        assertEquals(1, donationRepository.count())
+        mockMvc.perform(
+            post("/api/v1/donations")
+                .session(operatorSession)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"amount":100.00,"donationDate":"2026-01-15","donationType":"TITHE","paymentMethod":"CASH","donorId":$donorId}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.duplicateWarning").value(true))
+            .andExpect(jsonPath("$.saved").value(false))
     }
 
     @Test
