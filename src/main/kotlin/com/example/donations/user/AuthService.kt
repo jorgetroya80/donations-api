@@ -6,10 +6,13 @@ import com.example.donations.infrastructure.events.LoginFailed
 import com.example.donations.infrastructure.events.LoginSucceeded
 import com.example.donations.infrastructure.session.UserSessionTracker
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpSession
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.LockedException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.AuthenticationException
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.stereotype.Service
@@ -44,6 +47,15 @@ class AuthService(
         context.authentication = authentication
         SecurityContextHolder.setContext(context)
 
+        val session = rotateSession(httpRequest, context)
+        val roles = roleNames(authentication)
+        val mustChangePassword = userRepository.findByUsername(request.username)?.mustChangePassword ?: false
+        session.setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, mustChangePassword)
+        userSessionTracker.register(request.username, session)
+        return LoginResponse(username = request.username, roles = roles, mustChangePassword = mustChangePassword)
+    }
+
+    private fun rotateSession(httpRequest: HttpServletRequest, context: SecurityContext): HttpSession {
         // Rotate session ID on login to prevent session fixation: manual
         // authentication bypasses Spring Security's built-in protection.
         httpRequest.getSession(false)?.invalidate()
@@ -52,14 +64,12 @@ class AuthService(
             HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
             context
         )
-
-        val roles = authentication.authorities
-            .mapNotNull { it.authority }
-            .filter { it.startsWith("ROLE_") }
-            .map { it.removePrefix("ROLE_") }
-        val mustChangePassword = userRepository.findByUsername(request.username)?.mustChangePassword ?: false
-        session.setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, mustChangePassword)
-        userSessionTracker.register(request.username, session)
-        return LoginResponse(username = request.username, roles = roles, mustChangePassword = mustChangePassword)
+        return session
     }
+
+    private fun roleNames(authentication: Authentication): List<String> =
+        authentication.authorities
+            .mapNotNull { it.authority }
+            .filter { it.startsWith(ROLE_PREFIX) }
+            .map { it.removePrefix(ROLE_PREFIX) }
 }

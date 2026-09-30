@@ -6,7 +6,7 @@ import com.example.donations.donor.DonorRepository
 import com.example.donations.expense.ExpenseCategory
 import com.example.donations.expense.ExpenseRepository
 import com.example.donations.infrastructure.defaultYearRange
-import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.error.getOrThrow
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -30,7 +30,7 @@ class ReportService(
                 total = row[1] as BigDecimal,
             )
         }
-        val grandTotal = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
+        val grandTotal = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo).orZero()
 
         return DonationSummaryResponse(
             from = effectiveFrom,
@@ -50,7 +50,7 @@ class ReportService(
                 total = row[1] as BigDecimal,
             )
         }
-        val grandTotal = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
+        val grandTotal = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo).orZero()
 
         return ExpenseSummaryResponse(
             from = effectiveFrom,
@@ -63,8 +63,8 @@ class ReportService(
     fun balance(from: LocalDate?, to: LocalDate?): BalanceResponse {
         val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
 
-        val totalIncome = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
-        val totalExpenses = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
+        val totalIncome = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo).orZero()
+        val totalExpenses = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo).orZero()
 
         return BalanceResponse(
             from = effectiveFrom,
@@ -76,8 +76,7 @@ class ReportService(
     }
 
     fun donorStatement(donorId: Long, from: LocalDate?, to: LocalDate?): DonorStatementResponse {
-        val donor = donorRepository.findById(donorId)
-            .orElseThrow { NotFoundException("Donor not found with id: $donorId") }
+        val donor = donorRepository.getOrThrow(donorId, "Donor")
 
         val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
 
@@ -102,4 +101,6 @@ class ReportService(
             total = total,
         )
     }
+
+    private fun BigDecimal?.orZero(): BigDecimal = this ?: BigDecimal.ZERO
 }

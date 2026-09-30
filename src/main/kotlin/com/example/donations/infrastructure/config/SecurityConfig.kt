@@ -1,14 +1,10 @@
 package com.example.donations.infrastructure.config
 
-import com.example.donations.infrastructure.events.RequestIdFilter
-import jakarta.servlet.http.HttpServletResponse
-import org.slf4j.MDC
+import com.example.donations.infrastructure.error.writeProblem
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
-import org.springframework.http.ProblemDetail
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
@@ -22,7 +18,6 @@ import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import tools.jackson.databind.ObjectMapper
-import java.net.URI
 
 @Configuration
 @EnableMethodSecurity
@@ -57,15 +52,7 @@ class SecurityConfig(
             // Same RFC 9457 shape as GlobalExceptionHandler: filter-chain 401s never
             // reach the @RestControllerAdvice, so the body is produced here (ADR-004).
             exceptions.authenticationEntryPoint { request, response, _ ->
-                val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Authentication required")
-                problem.title = HttpStatus.UNAUTHORIZED.reasonPhrase
-                problem.instance = URI.create(request.requestURI)
-                MDC.get(RequestIdFilter.REQUEST_ID)?.let { problem.setProperty("requestId", it) }
-                response.status = HttpServletResponse.SC_UNAUTHORIZED
-                response.characterEncoding = Charsets.UTF_8.name()
-                response.contentType = MediaType.APPLICATION_PROBLEM_JSON_VALUE
-                response.writer.write(objectMapper.writeValueAsString(problem))
-                response.writer.flush()
+                writeProblem(request, response, objectMapper, HttpStatus.UNAUTHORIZED, "Authentication required")
             }
         }
         .logout { logout ->

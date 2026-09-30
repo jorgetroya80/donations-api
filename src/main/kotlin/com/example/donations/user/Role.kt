@@ -6,3 +6,5 @@ enum class Role {
     PASTOR,
     OPERATOR,
 }
+
+const val ROLE_PREFIX = "ROLE_"

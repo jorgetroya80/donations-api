@@ -21,7 +21,7 @@ class AppUserDetailsService(
         }
 
         val authorities = user.roles.map { role ->
-            SimpleGrantedAuthority("ROLE_${role.name}")
+            SimpleGrantedAuthority("$ROLE_PREFIX${role.name}")
         }
 
         return SpringUser.builder()

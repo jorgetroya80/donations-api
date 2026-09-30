@@ -1,8 +1,9 @@
 package com.example.donations.donation
 
+import com.example.donations.donor.Donor
 import com.example.donations.donor.DonorRepository
 import com.example.donations.infrastructure.defaultYearRange
-import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.error.getOrThrow
 import com.example.donations.infrastructure.events.DonationCreated
 import com.example.donations.infrastructure.events.DonationUpdated
 import com.example.donations.infrastructure.events.EventLogger
@@ -25,48 +26,33 @@ class DonationService(
         return donationRepository.findByDonationDateBetween(effectiveFrom, effectiveTo, pageable)
     }
 
-    fun getDonation(id: Long): Donation {
-        return donationRepository.findById(id)
-            .orElseThrow { NotFoundException("Donation not found with id: $id") }
-    }
+    fun getDonation(id: Long): Donation = donationRepository.getOrThrow(id, "Donation")
 
     @Transactional
     fun createDonation(request: CreateDonationRequest): DonationCreateResponse {
         val donor = request.donorId?.let { donorId ->
-            donorRepository.findById(donorId)
-                .orElseThrow { NotFoundException("Donor not found with id: $donorId") }
+            donorRepository.getOrThrow(donorId, "Donor")
         }
 
-        if (donor != null) {
-            val isDuplicate = donationRepository.existsByDonorAndAmountAndDonationDateAndDonationType(
-                donor = donor,
-                amount = request.amount!!,
-                donationDate = request.donationDate!!,
-                donationType = request.donationType!!,
-            )
+        val isDuplicate = donor != null && donationRepository.existsByDonorAndAmountAndDonationDateAndDonationType(
+            donor = donor,
+            amount = request.amount!!,
+            donationDate = request.donationDate!!,
+            donationType = request.donationType!!,
+        )
 
-            if (isDuplicate && !request.confirmDuplicate) {
-                return DonationCreateResponse.duplicateDetected()
-            }
-
-            if (isDuplicate && request.confirmDuplicate) {
-                val donation = buildDonation(request, donor)
-                val saved = donationRepository.save(donation)
-                eventLogger.emit(DonationCreated(saved.id!!, saved.donor?.id, saved.amount))
-                return DonationCreateResponse.savedWithWarning(saved)
-            }
+        if (isDuplicate && !request.confirmDuplicate) {
+            return DonationCreateResponse.duplicateDetected()
         }
 
-        val donation = buildDonation(request, donor)
-        val saved = donationRepository.save(donation)
+        val saved = donationRepository.save(buildDonation(request, donor))
         eventLogger.emit(DonationCreated(saved.id!!, saved.donor?.id, saved.amount))
-        return DonationCreateResponse.saved(saved)
+        return if (isDuplicate) DonationCreateResponse.savedWithWarning(saved) else DonationCreateResponse.saved(saved)
     }
 
     @Transactional
     fun updateDonation(id: Long, request: UpdateDonationRequest): Donation {
-        val donation = donationRepository.findById(id)
-            .orElseThrow { NotFoundException("Donation not found with id: $id") }
+        val donation = donationRepository.getOrThrow(id, "Donation")
 
         request.amount?.let { donation.amount = it }
         request.donationDate?.let { donation.donationDate = it }
@@ -75,8 +61,7 @@ class DonationService(
         request.notes?.let { donation.notes = it }
 
         if (request.donorId != null) {
-            val donor = donorRepository.findById(request.donorId)
-                .orElseThrow { NotFoundException("Donor not found with id: ${request.donorId}") }
+            val donor = donorRepository.getOrThrow(request.donorId, "Donor")
             donation.donor = donor
         }
 
@@ -85,7 +70,7 @@ class DonationService(
         return saved
     }
 
-    private fun buildDonation(request: CreateDonationRequest, donor: com.example.donations.donor.Donor?): Donation {
+    private fun buildDonation(request: CreateDonationRequest, donor: Donor?): Donation {
         return Donation(
             amount = request.amount!!,
             donationDate = request.donationDate!!,
