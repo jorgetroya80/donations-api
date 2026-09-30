@@ -30,7 +30,7 @@ class ReportService(
                 total = row[1] as BigDecimal,
             )
         }
-        val grandTotal = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
+        val grandTotal = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo).orZero()
 
         return DonationSummaryResponse(
             from = effectiveFrom,
@@ -50,7 +50,7 @@ class ReportService(
                 total = row[1] as BigDecimal,
             )
         }
-        val grandTotal = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
+        val grandTotal = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo).orZero()
 
         return ExpenseSummaryResponse(
             from = effectiveFrom,
@@ -63,8 +63,8 @@ class ReportService(
     fun balance(from: LocalDate?, to: LocalDate?): BalanceResponse {
         val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
 
-        val totalIncome = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
-        val totalExpenses = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo) ?: BigDecimal.ZERO
+        val totalIncome = donationRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo).orZero()
+        val totalExpenses = expenseRepository.sumAmountByDateBetween(effectiveFrom, effectiveTo).orZero()
 
         return BalanceResponse(
             from = effectiveFrom,
@@ -101,4 +101,6 @@ class ReportService(
             total = total,
         )
     }
+
+    private fun BigDecimal?.orZero(): BigDecimal = this ?: BigDecimal.ZERO
 }

@@ -32,7 +32,7 @@ Each task = one refactor across all its call sites, left green.
 ### Phase 2: Duplication + polish
 - [x] T3: Shared problem-JSON writer
 - [x] T4: `AuthService.login` split + shared `ROLE_PREFIX`
-- [ ] T5: `ReportService` `orZero()`
+- [x] T5: `ReportService` `orZero()`
 
 ### Checkpoint: Complete
 - [ ] `./gradlew test` green
