@@ -1,5 +1,6 @@
 package com.example.donations.donation
 
+import com.example.donations.donor.Donor
 import com.example.donations.donor.DonorRepository
 import com.example.donations.infrastructure.defaultYearRange
 import com.example.donations.infrastructure.error.getOrThrow
@@ -33,30 +34,20 @@ class DonationService(
             donorRepository.getOrThrow(donorId, "Donor")
         }
 
-        if (donor != null) {
-            val isDuplicate = donationRepository.existsByDonorAndAmountAndDonationDateAndDonationType(
-                donor = donor,
-                amount = request.amount!!,
-                donationDate = request.donationDate!!,
-                donationType = request.donationType!!,
-            )
+        val isDuplicate = donor != null && donationRepository.existsByDonorAndAmountAndDonationDateAndDonationType(
+            donor = donor,
+            amount = request.amount!!,
+            donationDate = request.donationDate!!,
+            donationType = request.donationType!!,
+        )
 
-            if (isDuplicate && !request.confirmDuplicate) {
-                return DonationCreateResponse.duplicateDetected()
-            }
-
-            if (isDuplicate && request.confirmDuplicate) {
-                val donation = buildDonation(request, donor)
-                val saved = donationRepository.save(donation)
-                eventLogger.emit(DonationCreated(saved.id!!, saved.donor?.id, saved.amount))
-                return DonationCreateResponse.savedWithWarning(saved)
-            }
+        if (isDuplicate && !request.confirmDuplicate) {
+            return DonationCreateResponse.duplicateDetected()
         }
 
-        val donation = buildDonation(request, donor)
-        val saved = donationRepository.save(donation)
+        val saved = donationRepository.save(buildDonation(request, donor))
         eventLogger.emit(DonationCreated(saved.id!!, saved.donor?.id, saved.amount))
-        return DonationCreateResponse.saved(saved)
+        return if (isDuplicate) DonationCreateResponse.savedWithWarning(saved) else DonationCreateResponse.saved(saved)
     }
 
     @Transactional
@@ -79,7 +70,7 @@ class DonationService(
         return saved
     }
 
-    private fun buildDonation(request: CreateDonationRequest, donor: com.example.donations.donor.Donor?): Donation {
+    private fun buildDonation(request: CreateDonationRequest, donor: Donor?): Donation {
         return Donation(
             amount = request.amount!!,
             donationDate = request.donationDate!!,

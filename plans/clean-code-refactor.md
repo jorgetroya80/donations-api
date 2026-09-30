@@ -22,7 +22,7 @@ Each task = one refactor across all its call sites, left green.
 
 ### Phase 1: Core (high value)
 - [x] T1: `getOrThrow` extension + adopt in services (+ expression-body getters)
-- [ ] T2: Collapse `createDonation` save paths
+- [x] T2: Collapse `createDonation` save paths
 
 ### Checkpoint: after T1-T2
 - [ ] `./gradlew test` green

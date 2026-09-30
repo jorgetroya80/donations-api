@@ -1,7 +1,7 @@
 # Todo: clean-code refactors (see clean-code-refactor.md)
 
 - [x] T1 `getOrThrow` extension + adopt in 5 services + expression getters
-- [ ] T2 Collapse `createDonation` (needs T1)
+- [x] T2 Collapse `createDonation` (needs T1)
 - [ ] **Checkpoint 1:** `./gradlew test` green, review with Jorge
 - [ ] T3 Shared problem-JSON writer (SecurityConfig + PasswordChangeRequiredFilter)
 - [ ] T4 `AuthService.login` split + `ROLE_PREFIX`
