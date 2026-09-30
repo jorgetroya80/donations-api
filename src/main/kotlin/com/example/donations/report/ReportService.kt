@@ -6,7 +6,7 @@ import com.example.donations.donor.DonorRepository
 import com.example.donations.expense.ExpenseCategory
 import com.example.donations.expense.ExpenseRepository
 import com.example.donations.infrastructure.defaultYearRange
-import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.error.getOrThrow
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -76,8 +76,7 @@ class ReportService(
     }
 
     fun donorStatement(donorId: Long, from: LocalDate?, to: LocalDate?): DonorStatementResponse {
-        val donor = donorRepository.findById(donorId)
-            .orElseThrow { NotFoundException("Donor not found with id: $donorId") }
+        val donor = donorRepository.getOrThrow(donorId, "Donor")
 
         val (effectiveFrom, effectiveTo) = defaultYearRange(from, to)
 

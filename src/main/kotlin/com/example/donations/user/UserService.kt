@@ -1,6 +1,7 @@
 package com.example.donations.user
 
 import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.error.getOrThrow
 import com.example.donations.infrastructure.events.AdminAction
 import com.example.donations.infrastructure.events.AdminActionType
 import com.example.donations.infrastructure.events.AuthorizationChanged
@@ -26,7 +27,7 @@ class UserService(
 
     @Transactional(readOnly = true)
     fun getUser(id: Long): User =
-        userRepository.findById(id).orElseThrow { NotFoundException("User not found with id: $id") }
+        userRepository.getOrThrow(id, "User")
 
     @Transactional
     fun createUser(request: CreateUserRequest): User {

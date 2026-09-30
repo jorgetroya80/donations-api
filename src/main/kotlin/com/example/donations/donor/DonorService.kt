@@ -1,6 +1,6 @@
 package com.example.donations.donor
 
-import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.error.getOrThrow
 import com.example.donations.infrastructure.events.DonorCreated
 import com.example.donations.infrastructure.events.DonorUpdated
 import com.example.donations.infrastructure.events.EventLogger
@@ -27,9 +27,7 @@ class DonorService(
         term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     @Transactional(readOnly = true)
-    fun getDonor(id: Long): Donor =
-        donorRepository.findById(id)
-            .orElseThrow { NotFoundException("Donor not found with id: $id") }
+    fun getDonor(id: Long): Donor = donorRepository.getOrThrow(id, "Donor")
 
     @Transactional
     fun createDonor(request: CreateDonorRequest): Donor {
@@ -52,8 +50,7 @@ class DonorService(
 
     @Transactional
     fun updateDonor(id: Long, request: UpdateDonorRequest): Donor {
-        val donor = donorRepository.findById(id)
-            .orElseThrow { NotFoundException("Donor not found with id: $id") }
+        val donor = donorRepository.getOrThrow(id, "Donor")
 
         request.nationalId?.let { newNationalId ->
             if (newNationalId != donor.nationalId && donorRepository.existsByNationalId(newNationalId)) {

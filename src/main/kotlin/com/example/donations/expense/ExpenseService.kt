@@ -1,7 +1,7 @@
 package com.example.donations.expense
 
 import com.example.donations.infrastructure.defaultYearRange
-import com.example.donations.infrastructure.error.NotFoundException
+import com.example.donations.infrastructure.error.getOrThrow
 import com.example.donations.infrastructure.events.EventLogger
 import com.example.donations.infrastructure.events.ExpenseCreated
 import com.example.donations.infrastructure.events.ExpenseUpdated
@@ -23,10 +23,7 @@ class ExpenseService(
         return expenseRepository.findByExpenseDateBetween(effectiveFrom, effectiveTo, pageable)
     }
 
-    fun getExpense(id: Long): Expense {
-        return expenseRepository.findById(id)
-            .orElseThrow { NotFoundException("Expense not found with id: $id") }
-    }
+    fun getExpense(id: Long): Expense = expenseRepository.getOrThrow(id, "Expense")
 
     @Transactional
     fun createExpense(request: CreateExpenseRequest): Expense {
@@ -45,8 +42,7 @@ class ExpenseService(
 
     @Transactional
     fun updateExpense(id: Long, request: UpdateExpenseRequest): Expense {
-        val expense = expenseRepository.findById(id)
-            .orElseThrow { NotFoundException("Expense not found with id: $id") }
+        val expense = expenseRepository.getOrThrow(id, "Expense")
 
         request.amount?.let { expense.amount = it }
         request.expenseDate?.let { expense.expenseDate = it }
