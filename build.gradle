@@ -19,7 +19,7 @@ ext['kotlin.version'] = '2.4.20'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(24)
+		languageVersion = JavaLanguageVersion.of(25)
 	}
 }
 
