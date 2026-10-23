@@ -60,7 +60,7 @@ Local machine has Temurin 24 on PATH and OpenJDK 26; no 25.
 
 ### Checkpoint: build + tests green on 25
 
-### Task 3: Docker image
+### Task 3: Docker image — done (Temurin 25.0.4.1 image, liveness UP)
 
 - `Dockerfile`: both stages `24` → `25` (`eclipse-temurin:25-jdk-noble`, `eclipse-temurin:25-jre-noble`).
 - **Verify:** `docker build -t donations:java25 .` succeeds; run it against the Compose
