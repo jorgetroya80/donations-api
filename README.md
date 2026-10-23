@@ -4,7 +4,7 @@ REST API to handle donations for a small organizations.
 
 ## Tech Stack
 
-- **Language:** Kotlin 2.4 on Java 24 (Temurin)
+- **Language:** Kotlin 2.4 on Java 25 (Temurin)
 - **Framework:** Spring Boot 4.0.5 with Spring MVC
 - **Build:** Gradle 9.4.1 (Groovy DSL)
 - **Database:** PostgreSQL 18.3 (via Docker Compose)
@@ -31,7 +31,7 @@ Infrastructure provides auditing, global error handling, and security configurat
 
 ## Prerequisites
 
-- Java 24
+- Java 25
 - Docker and Docker Compose
 
 ## Getting Started

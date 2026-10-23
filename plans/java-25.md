@@ -72,7 +72,7 @@ Local machine has Temurin 24 on PATH and OpenJDK 26; no 25.
 - `release.yml`: `java-version` → `'25'`.
 - **Verify:** CI on the PR passes.
 
-### Task 5: Docs and local version pin
+### Task 5: Docs and local version pin — done (only historical records still mention Java 24)
 
 - `README.md:7`, `README.md:34`, `CLAUDE.md:77`: "Java 24" → "Java 25".
 - `.tool-versions`: `temurin-24.0.2+12` → the installed Temurin 25 build.
