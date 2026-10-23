@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/jorgetroya80/donations-api/compare/v2.2.0...v2.3.0) (2026-10-23)
+
+
+### Features
+
+* upgrade Java to 25 ([#56](https://github.com/jorgetroya80/donations-api/issues/56)) ([6c36fc9](https://github.com/jorgetroya80/donations-api/commit/6c36fc9f2b7b9cd9029352b53adf83d1f857df37))
+
 ## [2.2.0](https://github.com/jorgetroya80/donations-api/compare/v2.1.0...v2.2.0) (2026-09-21)
 
 
