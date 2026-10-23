@@ -66,7 +66,7 @@ Local machine has Temurin 24 on PATH and OpenJDK 26; no 25.
 - **Verify:** `docker build -t donations:java25 .` succeeds; run it against the Compose
   PostgreSQL and hit `/actuator/health/liveness` → `UP`.
 
-### Task 4: CI workflows
+### Task 4: CI workflows — done (actionlint clean; CI run pending on PR)
 
 - `ci.yml`: step name and `java-version` → 25.
 - `release.yml`: `java-version` → `'25'`.
