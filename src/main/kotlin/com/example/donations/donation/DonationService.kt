@@ -2,6 +2,9 @@ package com.example.donations.donation
 
 import com.example.donations.donor.Donor
 import com.example.donations.donor.DonorRepository
+import com.example.donations.infrastructure.audit.AuditEntityType
+import com.example.donations.infrastructure.audit.AuditOperation
+import com.example.donations.infrastructure.audit.AuditService
 import com.example.donations.infrastructure.defaultYearRange
 import com.example.donations.infrastructure.error.getOrThrow
 import com.example.donations.infrastructure.events.DonationCreated
@@ -19,6 +22,7 @@ class DonationService(
     private val donationRepository: DonationRepository,
     private val donorRepository: DonorRepository,
     private val eventLogger: EventLogger,
+    private val auditService: AuditService,
 ) {
 
     fun listDonations(pageable: Pageable, from: LocalDate?, to: LocalDate?): Page<Donation> {
@@ -46,7 +50,9 @@ class DonationService(
         }
 
         val saved = donationRepository.save(buildDonation(request, donor))
-        eventLogger.emit(DonationCreated(saved.id!!, saved.donor?.id, saved.amount))
+        val id = saved.id!!
+        auditService.record(AuditEntityType.DONATION, id, AuditOperation.CREATE)
+        eventLogger.emit(DonationCreated(id, saved.donor?.id, saved.amount))
         return if (isDuplicate) DonationCreateResponse.savedWithWarning(saved) else DonationCreateResponse.saved(saved)
     }
 
@@ -66,6 +72,7 @@ class DonationService(
         }
 
         val saved = donationRepository.save(donation)
+        auditService.record(AuditEntityType.DONATION, id, AuditOperation.UPDATE)
         eventLogger.emit(DonationUpdated(id))
         return saved
     }

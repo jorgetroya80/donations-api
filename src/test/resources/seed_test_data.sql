@@ -303,4 +303,26 @@ FROM (VALUES
     ('2026-04-01'::DATE, '2026-06-30'::DATE, '2026-07-20'::DATE)
 ) AS q(start_date, end_date, payment_date);
 
+-- ============================================================
+-- 9. AUDIT LOG (origin of the seeded rows above)
+-- created_by IS NULL identifies rows inserted by this script (the app always
+-- sets it); NOT EXISTS keeps a re-run from duplicating audit rows.
+-- The V3 admin user is not covered: it is an applied migration.
+-- ============================================================
+
+INSERT INTO audit_log (entity_type, entity_id, operation, performed_by, performed_at)
+SELECT 'DONOR', d.id, 'CREATE', 'seed', now() FROM donors d
+WHERE d.created_by IS NULL
+  AND NOT EXISTS (SELECT 1 FROM audit_log a WHERE a.entity_type = 'DONOR' AND a.entity_id = d.id);
+
+INSERT INTO audit_log (entity_type, entity_id, operation, performed_by, performed_at)
+SELECT 'DONATION', d.id, 'CREATE', 'seed', now() FROM donations d
+WHERE d.created_by IS NULL
+  AND NOT EXISTS (SELECT 1 FROM audit_log a WHERE a.entity_type = 'DONATION' AND a.entity_id = d.id);
+
+INSERT INTO audit_log (entity_type, entity_id, operation, performed_by, performed_at)
+SELECT 'EXPENSE', e.id, 'CREATE', 'seed', now() FROM expenses e
+WHERE e.created_by IS NULL
+  AND NOT EXISTS (SELECT 1 FROM audit_log a WHERE a.entity_type = 'EXPENSE' AND a.entity_id = e.id);
+
 COMMIT;

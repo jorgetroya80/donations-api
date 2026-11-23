@@ -1,5 +1,8 @@
 package com.example.donations.expense
 
+import com.example.donations.infrastructure.audit.AuditEntityType
+import com.example.donations.infrastructure.audit.AuditOperation
+import com.example.donations.infrastructure.audit.AuditService
 import com.example.donations.infrastructure.defaultYearRange
 import com.example.donations.infrastructure.error.getOrThrow
 import com.example.donations.infrastructure.events.EventLogger
@@ -16,6 +19,7 @@ import java.time.LocalDate
 class ExpenseService(
     private val expenseRepository: ExpenseRepository,
     private val eventLogger: EventLogger,
+    private val auditService: AuditService,
 ) {
 
     fun listExpenses(pageable: Pageable, from: LocalDate?, to: LocalDate?): Page<Expense> {
@@ -36,7 +40,9 @@ class ExpenseService(
             paymentMethod = request.paymentMethod!!,
         )
         val saved = expenseRepository.save(expense)
-        eventLogger.emit(ExpenseCreated(saved.id!!, saved.amount, saved.category))
+        val id = saved.id!!
+        auditService.record(AuditEntityType.EXPENSE, id, AuditOperation.CREATE)
+        eventLogger.emit(ExpenseCreated(id, saved.amount, saved.category))
         return saved
     }
 
@@ -52,6 +58,7 @@ class ExpenseService(
         request.paymentMethod?.let { expense.paymentMethod = it }
 
         val saved = expenseRepository.save(expense)
+        auditService.record(AuditEntityType.EXPENSE, id, AuditOperation.UPDATE)
         eventLogger.emit(ExpenseUpdated(id))
         return saved
     }
