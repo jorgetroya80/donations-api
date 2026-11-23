@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.0](https://github.com/jorgetroya80/donations-api/compare/v2.3.0...v2.4.0) (2026-11-23)
+
+
+### Features
+
+* append-only audit log of who and when per change ([#58](https://github.com/jorgetroya80/donations-api/issues/58)) ([3cf121f](https://github.com/jorgetroya80/donations-api/commit/3cf121fa013bcb152ca90f3c375b486c4009c34f))
+
 ## [2.3.0](https://github.com/jorgetroya80/donations-api/compare/v2.2.0...v2.3.0) (2026-10-23)
 
 
