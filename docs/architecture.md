@@ -143,8 +143,9 @@ graph TB
 
     subgraph "Infrastructure"
         AUD[AuditorAwareConfig<br/>createdBy / updatedBy]
+        ALOG[AuditService<br/>audit_log history]
         OAP[OpenApiConfig<br/>Swagger]
-        FLY[Flyway<br/>V1–V8 migrations]
+        FLY[Flyway<br/>V1–V9 migrations]
     end
 
     subgraph "Database"
@@ -175,6 +176,7 @@ graph TB
     DOR --> PG
     ER --> PG
     FLY --> PG
+    ALOG --> PG
 
     AUD -.->|"populates createdBy/updatedAt"| UR
     AUD -.->|"populates createdBy/updatedAt"| DR
@@ -192,7 +194,7 @@ graph TB
 | **Entities** | `User`, `Donor`, `Donation`, `Expense` | Persisted domain model |
 | **DTOs** | `*Request`, `*Response` | API contracts (input/output) |
 | **Security** | `SecurityConfig`, `AppUserDetailsService` | Authentication, authorization, sessions |
-| **Infrastructure** | `GlobalExceptionHandler`, `AuditorAwareConfig` | Cross-cutting concerns: errors, auditing |
+| **Infrastructure** | `GlobalExceptionHandler`, `AuditorAwareConfig`, `AuditService` | Cross-cutting concerns: errors, auditing, change history |
 
 ---
 
@@ -357,6 +359,16 @@ erDiagram
         timestamp updated_at
     }
 
+    audit_log {
+        bigint id PK
+        varchar entity_type
+        bigint entity_id
+        varchar operation
+        varchar performed_by
+        bigint performed_by_id
+        timestamp performed_at
+    }
+
     users ||--o{ user_roles : "has roles"
     donors ||--o{ donations : "makes"
     donations }o--|| donors : "from donor"
@@ -373,6 +385,8 @@ erDiagram
 | `user_roles` | `(user_id, role)` | PRIMARY KEY |
 | `donors` | `LOWER(full_name)` | GIN trigram (pg_trgm) |
 | `donors` | `LOWER(national_id)` | GIN trigram (pg_trgm) |
+| `audit_log` | `(entity_type, entity_id)` | INDEX |
+| `audit_log` | `entity_type`, `operation` | CHECK (allowed values only) |
 
 ### Flyway Migrations
 
@@ -385,7 +399,10 @@ V5__create_donations.sql            → donations table + indexes
 V6__create_expenses.sql             → expenses table + index
 V7__add_must_change_password.sql    → forced rotation flag (flags still-default admin)
 V8__add_donor_search_trgm_index.sql → pg_trgm + GIN indexes on donor name / national_id
+V9__create_audit_log.sql            → append-only audit_log (who + when per change, ADR-006)
 ```
+
+`audit_log` has no foreign keys on purpose: entries outlive the rows they refer to. It stores ids and usernames only, never field values.
 
 ---
 
@@ -426,9 +443,9 @@ flowchart TD
     E -->|Found| G[Search for duplicate]
     D -->|No| G
     G -->|"Same donor+amount+date+type?"| H{Is duplicate?}
-    H -->|No| I[Save donation]
+    H -->|No| I[Save donation + audit_log CREATE]
     H -->|Yes and confirmDuplicate=false| J["200 OK<br/>saved=false, duplicateWarning=true"]
-    H -->|Yes and confirmDuplicate=true| K[Save with warning]
+    H -->|Yes and confirmDuplicate=true| K[Save with warning + audit_log CREATE]
     I --> L["201 Created<br/>saved=true, duplicateWarning=false"]
     K --> M["201 Created<br/>saved=true, duplicateWarning=true"]
 ```
@@ -688,7 +705,10 @@ com.donations/
     │   └── UserSessionTracker.kt       Session revocation on password change
     ├── audit/
     │   ├── AuditableEntity.kt          Base entity (id + audit fields)
-    │   └── AuditorAwareConfig.kt       Reads SecurityContext → createdBy
+    │   ├── AuditorAwareConfig.kt       Reads SecurityContext → createdBy
+    │   ├── AuditLogEntry.kt            audit_log entity + entity type / operation enums
+    │   ├── AuditLogRepository.kt       History query per record
+    │   └── AuditService.kt             Appends one audit_log row per write (same transaction)
     ├── error/
     │   ├── GlobalExceptionHandler.kt   Centralized @RestControllerAdvice
     │   ├── NotFoundException.kt        Custom 404 exception
@@ -708,7 +728,8 @@ src/main/resources/
     ├── V5__create_donations.sql
     ├── V6__create_expenses.sql
     ├── V7__add_must_change_password.sql
-    └── V8__add_donor_search_trgm_index.sql
+    ├── V8__add_donor_search_trgm_index.sql
+    └── V9__create_audit_log.sql
 ```
 
 ---
@@ -789,10 +810,11 @@ ECS was chosen over `logstash`/`gelf` for its stable published field names. Our 
 |----------|---------------|--------|
 | Authentication | HTTP session (JSESSIONID) | Simple for an API consumed by a single frontend |
 | Authorization | `@PreAuthorize` per method | Granular, co-located with the endpoint |
-| Auditing | `AuditableEntity` + `AuditorAwareConfig` | Traceability of who created/modified each record |
+| Auditing | `AuditableEntity` + `AuditorAwareConfig` | Traceability of who created/last modified each record |
+| Change history | `audit_log` table + `AuditService` ([ADR-006](decisions/ADR-006-audit-log.md)) | Every create/update kept with who and when, for auditors; ids only, no personal data |
 | Duplicates | Detection in `DonationService` + `confirmDuplicate` flag | Prevent double-entry errors without blocking the operator |
 | DNI/NIE validation | Custom validator (modulo 23) | Requirement of the Spanish church context |
-| Migrations | Flyway V1–V8 | Version-controlled schema, reproducible |
+| Migrations | Flyway V1–V9 | Version-controlled schema, reproducible |
 | Reports | `ReportService` with no own entity | Pure aggregations, no persisted state |
 | Profiles | `dev` (CORS + Swagger) / `prod` (no Swagger) | Swagger not exposed in production |
 | Event logging | Sealed `AppEvent` + OWASP names (§10) | Donor data excluded by the type system, not by review |

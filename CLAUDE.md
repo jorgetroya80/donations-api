@@ -88,7 +88,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Test entry point:** `TestDonationsApplication.kt` — boots the app with Testcontainers configuration for local dev (`./gradlew bootTestRun`, or run from IDE). Needs Docker, but *not* the Compose PostgreSQL below — Testcontainers starts its own. Startup logs `Started DonationsApplicationKt`, which is correct: the test entry point delegates via `fromApplication<DonationsApplication>()`.
 - **Database config:** `application.yaml` defaults to `localhost:5432/donations` (requires the Docker Compose PostgreSQL container, bound to loopback); overridable via `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` env vars
 - **Server:** port 8081; session cookie is `HttpOnly` + `SameSite=Lax` (plus `Secure` in `prod`)
-- **Flyway:** enabled (`spring.flyway.enabled: true`); migrations V1–V7 live in `src/main/resources/db/migration/` — applied migrations are immutable, schema changes go in new versions
+- **Flyway:** enabled (`spring.flyway.enabled: true`); migrations V1–V9 live in `src/main/resources/db/migration/` — applied migrations are immutable, schema changes go in new versions
 - **Profiles:** `dev` enables CORS (`app.cors.enabled`, origins via `APP_CORS_ALLOWED_ORIGINS`, default `http://localhost:8080`); `prod` disables springdoc (Swagger UI + api-docs) and marks the session cookie `Secure`
 
 ## Decision Records
