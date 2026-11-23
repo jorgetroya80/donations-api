@@ -1,5 +1,8 @@
 package com.example.donations.donor
 
+import com.example.donations.infrastructure.audit.AuditEntityType
+import com.example.donations.infrastructure.audit.AuditOperation
+import com.example.donations.infrastructure.audit.AuditService
 import com.example.donations.infrastructure.error.getOrThrow
 import com.example.donations.infrastructure.events.DonorCreated
 import com.example.donations.infrastructure.events.DonorUpdated
@@ -13,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 class DonorService(
     private val donorRepository: DonorRepository,
     private val eventLogger: EventLogger,
+    private val auditService: AuditService,
 ) {
 
     @Transactional(readOnly = true)
@@ -44,7 +48,9 @@ class DonorService(
         )
 
         val saved = donorRepository.save(donor)
-        eventLogger.emit(DonorCreated(saved.id!!))
+        val id = saved.id!!
+        auditService.record(AuditEntityType.DONOR, id, AuditOperation.CREATE)
+        eventLogger.emit(DonorCreated(id))
         return saved
     }
 
@@ -66,6 +72,7 @@ class DonorService(
         request.active?.let { donor.active = it }
 
         val saved = donorRepository.save(donor)
+        auditService.record(AuditEntityType.DONOR, id, AuditOperation.UPDATE)
         eventLogger.emit(DonorUpdated(id))
         return saved
     }

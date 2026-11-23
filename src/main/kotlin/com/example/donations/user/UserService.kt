@@ -1,5 +1,8 @@
 package com.example.donations.user
 
+import com.example.donations.infrastructure.audit.AuditEntityType
+import com.example.donations.infrastructure.audit.AuditOperation
+import com.example.donations.infrastructure.audit.AuditService
 import com.example.donations.infrastructure.error.NotFoundException
 import com.example.donations.infrastructure.error.getOrThrow
 import com.example.donations.infrastructure.events.AdminAction
@@ -20,6 +23,7 @@ class UserService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val eventLogger: EventLogger,
+    private val auditService: AuditService,
 ) {
 
     @Transactional(readOnly = true)
@@ -44,7 +48,9 @@ class UserService(
             roles = request.roles,
         )
         val saved = userRepository.save(user)
-        eventLogger.emit(AdminAction(actingUser(), AdminActionType.USER_CREATE, saved.id!!))
+        val id = saved.id!!
+        auditService.record(AuditEntityType.USER, id, AuditOperation.CREATE)
+        eventLogger.emit(AdminAction(actingUser(), AdminActionType.USER_CREATE, id))
         return saved
     }
 
@@ -74,6 +80,7 @@ class UserService(
         }
 
         val saved = userRepository.save(user)
+        auditService.record(AuditEntityType.USER, id, AuditOperation.UPDATE)
         val action = if (request.password != null) AdminActionType.PASSWORD_RESET else AdminActionType.USER_UPDATE
         // Fires unconditionally, including for a PUT that changes nothing: an
         // admin issuing a pointless write is still an admin action, and deciding
@@ -100,6 +107,7 @@ class UserService(
         user.password = passwordEncoder.encode(newPassword)!!
         user.mustChangePassword = false
         userRepository.save(user)
+        auditService.record(AuditEntityType.USER, user.id!!, AuditOperation.UPDATE)
         eventLogger.emit(PasswordChanged(username))
     }
 
