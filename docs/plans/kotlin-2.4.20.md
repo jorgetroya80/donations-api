@@ -197,7 +197,7 @@ match the present erases the record (Decision 4).
 
 **Acceptance criteria:**
 - [ ] The three current documents say Kotlin 2.4.
-- [ ] Historical plan documents under `plans/` and `docs/*-spec.md` are untouched.
+- [ ] Historical plan documents under `docs/plans/` and `docs/*-spec.md` are untouched.
 
 **Verification:**
 - [ ] `grep -rn "Kotlin 2\.2" --include="*.md" .` returns only historical documents.
@@ -259,7 +259,7 @@ this one. Decide whether this upgrade is the moment to run it once locally.
 2. **No ADR.** A Kotlin minor bump reverts in one line; the reasoning lives in this plan and in the
    commit message.
 3. **Language level pinned to 2.2**, language-level move deferred — see Task 3, applied.
-4. **Historical docs left as they are.** `docs/donor-search.md` and the `plans/` documents keep
+4. **Historical docs left as they are.** `donor-search.md` and the `docs/plans/` documents keep
    saying "Kotlin 2.2"; they describe what was true when written. Only the four current references
    in Task 4 change.
 

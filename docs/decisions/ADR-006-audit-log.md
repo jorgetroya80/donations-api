@@ -39,8 +39,8 @@ Constraints:
 4. All writes already go through `@Transactional` service methods; no repository is written
    to from anywhere else.
 
-Driven by the spec [`docs/audit-log-spec.md`](../audit-log-spec.md) and plan
-[`plans/audit-log.md`](../../plans/audit-log.md).
+Driven by the spec [`docs/specs/audit-log.md`](../specs/audit-log.md) and plan
+[`docs/plans/audit-log.md`](../plans/audit-log.md).
 
 ## Decision
 

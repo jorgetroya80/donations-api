@@ -1,6 +1,6 @@
 # TODO — Structured Domain & Security Event Logging
 
-Plan: [event-logging.md](event-logging.md) · PRD: [PRD-8](../docs/PRD-8.md) (#47) · ADR: [ADR-005](../docs/decisions/ADR-005-event-logging-personal-data-policy.md)
+Plan: [event-logging.md](event-logging.md) · Spec: [`docs/specs/event-logging.md`](../specs/event-logging.md) (#47) · ADR: [ADR-005](../decisions/ADR-005-event-logging-personal-data-policy.md)
 
 Nothing blocked. Login-failure event mapping resolved in the plan (three moments, two events, `authn_login_fail_max` dropped as redundant).
 

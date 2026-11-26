@@ -1,6 +1,6 @@
 # Plan: Donor search on GET /api/v1/donors
 
-Source spec: `plans/donor-search.md` (issue #37).
+Source spec: `docs/plans/donor-search.md` (issue #37).
 
 ## Goal
 Optional `search` query param on `GET /api/v1/donors` — case-insensitive partial match over

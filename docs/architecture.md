@@ -1,6 +1,6 @@
 # Software Architecture — Donations API v1
 
-**Version:** 1.5.0 | **Stack:** Kotlin 2.4 · Spring Boot 4.0.5 · PostgreSQL 18.3
+**Version:** 1.6.0 | **Stack:** Kotlin 2.4 · Java 25 · Spring Boot 4.0.5 · PostgreSQL 18.3
 
 ---
 
@@ -51,7 +51,7 @@ The application is a **REST API** for church financial management. It manages do
 > containers. *prod* runs the API as a Docker web service on **Render** (`frankfurt`
 > region, dynamic `$PORT`, TLS terminated at Render's edge → `forward-headers-strategy:
 > framework`) against **Neon** managed Postgres (`eu-central-1`, JDBC over TLS
-> `sslmode=require`, `-pooler` PgBouncer endpoint). See `plans/deploy-render.md`.
+> `sslmode=require`, `-pooler` PgBouncer endpoint). See `docs/plans/deploy-render.md`.
 
 ---
 
@@ -229,7 +229,7 @@ classDiagram
 
     class Donor {
         +fullName: String
-        +dniNie: String
+        +nationalId: String
         +email: String?
         +phone: String?
         +address: String?
@@ -320,7 +320,7 @@ erDiagram
     donors {
         bigint id PK
         varchar full_name
-        varchar dni_nie UK
+        varchar national_id UK
         varchar email
         varchar phone
         text address
@@ -379,7 +379,7 @@ erDiagram
 | Table | Column | Type |
 |-------|--------|------|
 | `users` | `username` | UNIQUE |
-| `donors` | `dni_nie` | UNIQUE |
+| `donors` | `national_id` | UNIQUE |
 | `donations` | `donation_date` | INDEX |
 | `donations` | `donor_id` | INDEX + FK → donors |
 | `user_roles` | `(user_id, role)` | PRIMARY KEY |
@@ -552,7 +552,7 @@ sequenceDiagram
 | Default credentials | `must_change_password` flag (V7). `PasswordChangeRequiredFilter` returns 403 `{"code":"PASSWORD_CHANGE_REQUIRED"}` for flagged sessions everywhere except `PUT /api/v1/users/me/password` and `POST /api/v1/logout`. Admin-provisioned passwords (create user, admin reset) are always provisional; `LoginResponse.mustChangePassword` lets the frontend redirect |
 | Session revocation | `UserSessionTracker`: self-service password change revokes the user's other sessions; admin password reset revokes all of the target's sessions |
 
-Details and decisions: [docs/specs/security-hardening.md](security-hardening.md)
+Details and decisions: [docs/specs/security-hardening.md](specs/security-hardening.md)
 
 ---
 
@@ -565,21 +565,21 @@ sequenceDiagram
     actor C as Client (OPERATOR/TREASURER)
     participant DC as DonorController
     participant DS as DonorService
-    participant VAL as DniNieValidator
+    participant VAL as NationalIdValidator
     participant DR as DonorRepository
     participant DB as PostgreSQL
 
-    C->>DC: POST /api/v1/donors {fullName, dniNie, email, ...}
-    DC->>VAL: Validate @ValidDniNie (format + check digit)
+    C->>DC: POST /api/v1/donors {fullName, nationalId, email, ...}
+    DC->>VAL: Validate @ValidNationalId (format + check digit)
     VAL-->>DC: OK / 400 if invalid
     DC->>DS: createDonor(CreateDonorRequest)
-    DS->>DR: existsByDniNie(dniNie)
-    DR->>DB: SELECT COUNT(*) FROM donors WHERE dni_nie=?
+    DS->>DR: existsByNationalId(nationalId)
+    DR->>DB: SELECT COUNT(*) FROM donors WHERE national_id=?
     DB-->>DR: 0 / 1
-    alt dni_nie already exists
+    alt national_id already exists
         DS-->>DC: throw IllegalStateException
         DC-->>C: 409 Conflict
-    else dni_nie available
+    else national_id available
         DS->>DR: save(Donor)
         DR->>DB: INSERT INTO donors ...
         DB-->>DR: Donor with generated id
@@ -649,7 +649,7 @@ sequenceDiagram
 ## 9. Package Structure
 
 ```
-com.donations/
+com.example.donations/
 │
 ├── DonationsApplication.kt              ← Entry point
 │
@@ -661,6 +661,8 @@ com.donations/
 │   ├── UserController.kt               REST Controller
 │   ├── UserDtos.kt                     Request / Response DTOs
 │   ├── AuthController.kt               Login endpoint
+│   ├── AuthService.kt                  Login + session rotation
+│   ├── AuthDtos.kt                     Login DTOs
 │   ├── LoginAttemptService.kt          Brute-force lockout
 │   └── AppUserDetailsService.kt        Spring Security bridge
 │
@@ -671,8 +673,8 @@ com.donations/
 │   ├── DonorController.kt              REST Controller
 │   ├── DonorDtos.kt                    DTOs
 │   └── validation/
-│       ├── ValidDniNie.kt              Annotation
-│       └── DniNieValidator.kt          DNI/NIE logic (modulo 23)
+│       ├── ValidNationalId.kt          Annotation
+│       └── NationalIdValidator.kt      DNI/NIE logic (modulo 23)
 │
 ├── donation/                            ← Domain: Donations
 │   ├── Donation.kt                      Entity
@@ -697,6 +699,7 @@ com.donations/
 │   └── ReportDtos.kt                  Response DTOs
 │
 └── infrastructure/
+    ├── DateRanges.kt                   Default year range for date filters
     ├── config/
     │   ├── SecurityConfig.kt           Auth, CORS, sessions, BCrypt
     │   ├── PasswordChangeRequiredFilter.kt  Forced password rotation
@@ -712,7 +715,8 @@ com.donations/
     ├── error/
     │   ├── GlobalExceptionHandler.kt   Centralized @RestControllerAdvice
     │   ├── NotFoundException.kt        Custom 404 exception
-    │   └── ErrorResponse.kt           JSON error structure
+    │   ├── ProblemResponses.kt         RFC 9457 ProblemDetail builders (ADR-004)
+    │   └── RepositoryExtensions.kt     getOrThrow → NotFoundException
     └── events/
         ├── AppEvent.kt                 Sealed event vocabulary (see §10)
         ├── EventLogger.kt              Sole emitter; adds actor at emit time
@@ -736,7 +740,7 @@ src/main/resources/
 
 ## 10. Observability — Event Logging
 
-The application emits a **closed, typed set of events** rather than free-form log statements. Names follow the [OWASP Application Logging Vocabulary](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html); domain events extend the same `noun_verb` grammar. See [ADR-005](decisions/ADR-005-event-logging-personal-data-policy.md) for the decision and [PRD-8](PRD-8.md) for the requirements.
+The application emits a **closed, typed set of events** rather than free-form log statements. Names follow the [OWASP Application Logging Vocabulary](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html); domain events extend the same `noun_verb` grammar. See [ADR-005](decisions/ADR-005-event-logging-personal-data-policy.md) for the decision and [`docs/specs/event-logging.md`](specs/event-logging.md) for the requirements.
 
 ### Why a type per event
 

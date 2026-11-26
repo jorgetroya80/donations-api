@@ -1,7 +1,7 @@
 # Spec: Audit Log (who + when per change)
 
-Source idea: [`docs/ideas/audit-log.md`](ideas/audit-log.md)
-Decision record: [ADR-006](decisions/ADR-006-audit-log.md)
+Source idea: [`docs/ideas/audit-log.md`](../ideas/audit-log.md)
+Decision record: [ADR-006](../decisions/ADR-006-audit-log.md)
 
 ## Objective
 

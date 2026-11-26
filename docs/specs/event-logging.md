@@ -1,4 +1,4 @@
-# PRD-8: Structured Domain and Security Event Logging
+# Spec: Structured Domain and Security Event Logging
 
 ## Problem Statement
 
@@ -113,7 +113,7 @@ The success criterion for this work is concrete and worth restating: given a rep
 
 ## References
 
-- [ADR-005: OWASP-vocabulary event logging with donor data excluded by construction](decisions/ADR-005-event-logging-personal-data-policy.md) — the decision record driven by this PRD
+- [ADR-005: OWASP-vocabulary event logging with donor data excluded by construction](../decisions/ADR-005-event-logging-personal-data-policy.md) — the decision record driven by this spec
 - [OWASP Application Logging Vocabulary Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html) — event names, levels, and required fields
 - [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) — what to log and what to exclude
 - [Spring Boot Logging Reference](https://docs.spring.io/spring-boot/reference/features/logging.html) — built-in structured logging formats and MDC handling

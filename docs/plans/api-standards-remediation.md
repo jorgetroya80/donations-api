@@ -195,7 +195,7 @@ Tasks 6–8 are parallel-safe with each other; 2→3 and 4→5 are sequential. E
 
 ---
 
-## plans/todo.md (to materialize on approval)
+## docs/plans/todo.md (to materialize on approval)
 
 ```markdown
 # TODO — API Standards & Architecture Remediation

@@ -2,26 +2,26 @@
 
 ## Overview
 
-Implements [PRD-8](../docs/PRD-8.md) (issue #47) under [ADR-005](../docs/decisions/ADR-005-event-logging-personal-data-policy.md).
+Implements [`docs/specs/event-logging.md`](../specs/event-logging.md) (issue #47) under [ADR-005](../decisions/ADR-005-event-logging-personal-data-policy.md).
 
 Replaces the codebase's four ad-hoc log statements with a closed, typed event vocabulary named per the OWASP Application Logging Vocabulary, correlated per request via MDC, and rendered readable in `dev` / structured JSON in `prod`. Donor personal data is excluded by construction — each event type declares its fields, so there is no field to hold a national ID.
 
-**Success criterion (from PRD-8):** given a report that something failed, find the correlation id, pull every event from that request, and understand what happened — without querying the database and without adding temporary logging.
+**Success criterion (from `docs/specs/event-logging.md`):** given a report that something failed, find the correlation id, pull every event from that request, and understand what happened — without querying the database and without adding temporary logging.
 
 ## Architecture Decisions
 
 - **`AppEvent` is a sealed hierarchy**, one type per event, each declaring `name`, `level`, and its own fields. This is what makes the PII rule a compile-time property rather than review discipline (ADR-005).
 - **`EventLogger` is the only holder of an SLF4J logger** in production code. Single method, expected never to change.
-- **Actor username is read from `SecurityContextHolder` at emit time, not written to MDC by a filter.** The MDC filter runs at highest precedence — before authentication — so the username isn't available to it. Reading at emit time is always correct and removes a moving part. *(Refinement on PRD-8, which implied the filter attaches both.)*
+- **Actor username is read from `SecurityContextHolder` at emit time, not written to MDC by a filter.** The MDC filter runs at highest precedence — before authentication — so the username isn't available to it. Reading at emit time is always correct and removes a moving part. *(Refinement on `docs/specs/event-logging.md`, which implied the filter attaches both.)*
 - **Correlation id only in MDC**, set at highest filter precedence so even filter-chain 401s carry one.
 - **Format via Spring Boot's native structured logging**, profile-switched in `application.yaml` alongside the existing CORS/cookie splits. No new dependency.
 - **Stacktraces are retained** on unhandled exceptions; residual PII risk accepted and recorded in ADR-005.
 - **Reads emit nothing** — lists, gets, reports are silent.
 - **Never commit** — verify, report, Jorge commits (standing workflow rule).
 
-### Resolved — login failure events (supersedes PRD-8 stories 15/16)
+### Resolved — login failure events (supersedes `docs/specs/event-logging.md` stories 15/16)
 
-PRD-8 listed both `authn_login_fail_max` and `authn_login_lock`. In this codebase they fire at the *same instant* — `LoginAttemptService.recordFailure` locks the account exactly when the count hits `MAX_FAILURES` — so emitting both is duplicate noise. OWASP separates them because a lock can have causes other than max retries, which is what its `reason` field is for; here `maxretries` is the only cause.
+`docs/specs/event-logging.md` listed both `authn_login_fail_max` and `authn_login_lock`. In this codebase they fire at the *same instant* — `LoginAttemptService.recordFailure` locks the account exactly when the count hits `MAX_FAILURES` — so emitting both is duplicate noise. OWASP separates them because a lock can have causes other than max retries, which is what its `reason` field is for; here `maxretries` is the only cause.
 
 The login path has **three** distinct observable moments, and the naive mapping collapses the wrong pair:
 
@@ -33,7 +33,7 @@ The login path has **three** distinct observable moments, and the naive mapping 
 
 **Decision:** `authn_login_fail_max` is not implemented. `authn_login_fail` gains a `locked` field so attempts against a locked account — the strongest brute-force signal available, and otherwise indistinguishable from a typo'd password — are queryable. Two events, three answerable questions, no refactor of `LoginAttemptService`.
 
-**ADR note:** this mapping is recorded directly in [ADR-005](../docs/decisions/ADR-005-event-logging-personal-data-policy.md) — see its *"Login failures map to three moments, not two"* decision bullet and the rejected *"Emit both `authn_login_fail_max` and `authn_login_lock`"* alternative. The ADR is the authority; this section is the implementation-facing restatement. Task 11's close-out check still verifies the shipped catalogue against it.
+**ADR note:** this mapping is recorded directly in [ADR-005](../decisions/ADR-005-event-logging-personal-data-policy.md) — see its *"Login failures map to three moments, not two"* decision bullet and the rejected *"Emit both `authn_login_fail_max` and `authn_login_lock`"* alternative. The ADR is the authority; this section is the implementation-facing restatement. Task 11's close-out check still verifies the shipped catalogue against it.
 
 ## Dependency Graph
 
@@ -234,7 +234,7 @@ Tasks 1–3 are the tracer bullet and must all land before Checkpoint 1 — an e
 **Files likely touched:** `expense/ExpenseService.kt`, event types, tests
 **Estimated scope:** S
 
-- [ ] **CHECKPOINT 3:** Full suite green. Complete event catalogue matches PRD-8 and ADR-005. Report to Jorge.
+- [ ] **CHECKPOINT 3:** Full suite green. Complete event catalogue matches `docs/specs/event-logging.md` and ADR-005. Report to Jorge.
 
 ---
 
@@ -264,7 +264,7 @@ Tasks 1–3 are the tracer bullet and must all land before Checkpoint 1 — an e
 **Acceptance criteria:**
 - [ ] Event catalogue documented with names, levels, and fields
 - [ ] Any divergence from ADR-005 is either corrected in code or captured in a superseding ADR
-- [ ] PRD-8 issue #47 closed
+- [ ] `docs/specs/event-logging.md` issue #47 closed
 
 **Verification:**
 - [ ] Manual review against ADR-005

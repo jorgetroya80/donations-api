@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-A codebase review against API standards (2026-07-16, `plans/api-standards-remediation.md`)
+A codebase review against API standards (2026-07-16, `docs/plans/api-standards-remediation.md`)
 found two problems with the API's error responses:
 
 1. Errors use a bespoke shape — `ErrorResponse {status, error, message, fields?, timestamp}`
@@ -81,6 +81,6 @@ return RFC 9457 `ProblemDetail` with content type `application/problem+json`:
 - Standard tooling (gateways, log processors, HTTP clients) can consume errors generically.
 - The `fields` extension is our own convention on top of the standard; it is the one part a
   generic RFC 9457 consumer won't know about, and should be documented in the OpenAPI spec
-  when error schemas are annotated (deferred follow-up in `plans/api-standards-remediation.md`).
+  when error schemas are annotated (deferred follow-up in `docs/plans/api-standards-remediation.md`).
 - Revisit trigger: if error kinds need machine discrimination beyond status codes, introduce
   a problem-type catalog (non-breaking).

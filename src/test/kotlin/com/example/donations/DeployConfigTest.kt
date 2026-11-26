@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * Guards the Render deploy configuration (plans/deploy-render.md):
+ * Guards the Render deploy configuration (docs/plans/deploy-render.md):
  * the prod profile must honor X-Forwarded-* headers so the Secure session
  * cookie works behind Render's TLS-terminating proxy.
  */

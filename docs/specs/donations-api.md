@@ -1,4 +1,4 @@
-# PRD: Church Donations and Expenditure Management API
+# Spec: Church Donations and Expenditure Management API
 
 ## Problem Statement
 
@@ -166,7 +166,7 @@ The codebase already includes a Testcontainers configuration (`TestcontainersCon
 - **Approval workflows** for expenses
 - **Hard deletion** of any records (donors, donations, expenses, users)
 - **Self-registration** or email-based password reset
-- **Frontend / UI** — this PRD covers the API only
+- **Frontend / UI** — this spec covers the API only
 - **Forced password change on first login**
 
 ## Further Notes

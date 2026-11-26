@@ -1,4 +1,4 @@
-# PRD-7: Export Client Factory from API Client Package
+# Spec: Export Client Factory from API Client Package
 
 ## Problem Statement
 

@@ -60,4 +60,4 @@ Paginated responses are serialized via a stable `PagedModel` DTO instead of the 
   `$.page.*`. This requires a **major** version bump of the generated TypeScript client; the
   package version is coupled to the backend release, so consumers upgrade deliberately.
 
-See also: `plans/page-serialization-via-dto.md`.
+See also: `docs/plans/page-serialization-via-dto.md`.

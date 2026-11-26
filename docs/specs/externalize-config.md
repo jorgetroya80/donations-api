@@ -1,4 +1,4 @@
-# PRD: Externalize Configuration — Database, Docker, and CORS
+# Spec: Externalize Configuration — Database, Docker, and CORS
 
 ## Problem Statement
 
