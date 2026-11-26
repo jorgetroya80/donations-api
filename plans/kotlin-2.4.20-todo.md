@@ -56,7 +56,7 @@ the point of the upgrade is to learn whether the codebase runs on 2.4); historic
   - [x] `README.md:7`, `CLAUDE.md:77`, `docs/architecture.md:3` and `:68` now say Kotlin 2.4
   - [x] `CLAUDE.md` also states the language level, since a future reader compiling at 2.2 on a 2.4
         toolchain would otherwise find the flag list confusing
-  - [x] Historical docs left alone per Decision 4: `docs/donor-search.md` still says 2.2
+  - [x] Historical docs left alone per Decision 4: `donor-search.md` still says 2.2
   - [x] Verify: the only remaining "Kotlin 2.2" mentions are that historical plan and these two
         planning documents, which describe the upgrade itself
 
