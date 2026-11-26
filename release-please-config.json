@@ -4,7 +4,10 @@
     ".": {
       "release-type": "simple",
       "bump-minor-pre-major": false,
-      "bump-patch-for-minor-pre-major": false
+      "bump-patch-for-minor-pre-major": false,
+      "extra-files": [
+        "build.gradle"
+      ]
     }
   },
   "pull-request-header": ":rocket: New Release is coming",

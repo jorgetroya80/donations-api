@@ -9,7 +9,7 @@ plugins {
 }
 
 group = 'com.example'
-version = '0.0.1-SNAPSHOT'
+version = '2.4.0' // x-release-please-version
 
 // Spring Boot's BOM pins kotlin-stdlib, kotlin-reflect and kotlin-test to its own Kotlin
 // version (2.2.21 in Boot 4.0.5), which io.spring.dependency-management then applies. Without

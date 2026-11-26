@@ -1,5 +1,6 @@
 services:
   postgres:
+    container_name: donations-db
     image: postgres:18.3-bookworm
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -16,6 +17,7 @@ services:
 
   api:
     build: .
+    container_name: donations-api
     image: donations-api
     ports:
       - "8081:8081"
