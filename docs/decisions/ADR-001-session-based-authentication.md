@@ -69,4 +69,4 @@ Use **Spring Security with server-side HTTP sessions** (`JSESSIONID` cookie), no
   the database (and likely adopting `SessionRegistry`) would be the follow-up, recorded as a
   new ADR that supersedes this one.
 
-See also: `docs/architecture.md`, `docs/specs/security-hardening.md`, `plans/security-hardening.md`.
+See also: `docs/architecture.md`, `docs/specs/security-hardening.md`, `docs/plans/security-hardening.md`.

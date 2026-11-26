@@ -1,6 +1,6 @@
 # Plan: OpenAPI Client Package Generation on Release
 
-> Source PRD: [docs/specs/openapi-client-package.md](../docs/specs/openapi-client-package.md) · [GitHub Issue #18](https://github.com/jorgetroya80/donations-api/issues/18)
+> Source PRD: [docs/specs/openapi-client-package.md](../specs/openapi-client-package.md) · [GitHub Issue #18](https://github.com/jorgetroya80/donations-api/issues/18)
 
 ## Architectural decisions
 

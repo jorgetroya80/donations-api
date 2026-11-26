@@ -67,4 +67,4 @@ Deploy the Docker image as a **Render web service**, backed by **Neon** managed 
   means redoing this layer (and would warrant a superseding ADR).
 - Free-tier trade-offs are accepted: cold starts after idle and constrained CPU/memory.
 
-See also: `plans/deploy-render.md`, `docs/architecture.md`.
+See also: `docs/plans/deploy-render.md`, `docs/architecture.md`.

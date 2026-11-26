@@ -3,7 +3,7 @@ build/
 .git/
 .gitignore
 *.md
-plans/
+docs/plans/
 .claude/
 .idea/
 .vscode/

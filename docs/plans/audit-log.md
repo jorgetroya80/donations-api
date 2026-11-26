@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implements [`docs/specs/audit-log.md`](../docs/specs/audit-log.md) (approved 2026-11-23) — decision in [ADR-006](../docs/decisions/ADR-006-audit-log.md): an append-only `audit_log` table recording who and when for every create/update of donations, expenses, donors and users. App-written, same transaction as the change, identifiers only. Work on branch `feat/audit-log`; Jorge commits.
+Implements [`docs/specs/audit-log.md`](../specs/audit-log.md) (approved 2026-11-23) — decision in [ADR-006](../decisions/ADR-006-audit-log.md): an append-only `audit_log` table recording who and when for every create/update of donations, expenses, donors and users. App-written, same transaction as the change, identifiers only. Work on branch `feat/audit-log`; Jorge commits.
 
 ## Progress
 

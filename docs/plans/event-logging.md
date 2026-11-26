@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implements [`docs/specs/event-logging.md`](../docs/specs/event-logging.md) (issue #47) under [ADR-005](../docs/decisions/ADR-005-event-logging-personal-data-policy.md).
+Implements [`docs/specs/event-logging.md`](../specs/event-logging.md) (issue #47) under [ADR-005](../decisions/ADR-005-event-logging-personal-data-policy.md).
 
 Replaces the codebase's four ad-hoc log statements with a closed, typed event vocabulary named per the OWASP Application Logging Vocabulary, correlated per request via MDC, and rendered readable in `dev` / structured JSON in `prod`. Donor personal data is excluded by construction — each event type declares its fields, so there is no field to hold a national ID.
 
@@ -33,7 +33,7 @@ The login path has **three** distinct observable moments, and the naive mapping 
 
 **Decision:** `authn_login_fail_max` is not implemented. `authn_login_fail` gains a `locked` field so attempts against a locked account — the strongest brute-force signal available, and otherwise indistinguishable from a typo'd password — are queryable. Two events, three answerable questions, no refactor of `LoginAttemptService`.
 
-**ADR note:** this mapping is recorded directly in [ADR-005](../docs/decisions/ADR-005-event-logging-personal-data-policy.md) — see its *"Login failures map to three moments, not two"* decision bullet and the rejected *"Emit both `authn_login_fail_max` and `authn_login_lock`"* alternative. The ADR is the authority; this section is the implementation-facing restatement. Task 11's close-out check still verifies the shipped catalogue against it.
+**ADR note:** this mapping is recorded directly in [ADR-005](../decisions/ADR-005-event-logging-personal-data-policy.md) — see its *"Login failures map to three moments, not two"* decision bullet and the rejected *"Emit both `authn_login_fail_max` and `authn_login_lock`"* alternative. The ADR is the authority; this section is the implementation-facing restatement. Task 11's close-out check still verifies the shipped catalogue against it.
 
 ## Dependency Graph
 

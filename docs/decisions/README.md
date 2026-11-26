@@ -6,7 +6,7 @@ Donations API — and, just as importantly, the alternatives that were rejected 
 It complements the rest of `docs/`:
 
 - **`docs/specs/*.md`** — *what* we are building (specs and product requirements).
-- **`plans/*.md`** — *how* a given piece of work is sequenced (implementation plans).
+- **`docs/plans/*.md`** — *how* a given piece of work is sequenced (implementation plans).
 - **`docs/decisions/` (here)** — *why* a foundational choice was made the way it was.
 
 Code shows what was built. An ADR captures the context, constraints, and trade-offs that

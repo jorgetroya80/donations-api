@@ -51,7 +51,7 @@ The application is a **REST API** for church financial management. It manages do
 > containers. *prod* runs the API as a Docker web service on **Render** (`frankfurt`
 > region, dynamic `$PORT`, TLS terminated at Render's edge → `forward-headers-strategy:
 > framework`) against **Neon** managed Postgres (`eu-central-1`, JDBC over TLS
-> `sslmode=require`, `-pooler` PgBouncer endpoint). See `plans/deploy-render.md`.
+> `sslmode=require`, `-pooler` PgBouncer endpoint). See `docs/plans/deploy-render.md`.
 
 ---
 

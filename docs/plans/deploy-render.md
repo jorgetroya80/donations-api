@@ -87,7 +87,7 @@ liveness probe instead (reports only `livenessState`, never the DB).
 - Covered by `DeployLivenessTest` (anonymous `GET /actuator/health/liveness` → 200).
 
 ### 7. Genericize the Neon host in the committed plan (security hygiene)
-The real Neon endpoint + username were committed in `plans/deploy-render.md`; replace with
+The real Neon endpoint + username were committed in `docs/plans/deploy-render.md`; replace with
 generic placeholders (`ep-xxx-pooler.<region>...`, `username`) to match the already-
 sanitized `docs/architecture.md`. No password was ever committed.
 

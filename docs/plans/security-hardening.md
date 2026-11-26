@@ -1,6 +1,6 @@
 # Implementation Plan: Security Hardening — Donations API v1
 
-**Status:** Implemented (2026-06-10). All 8 findings fixed; spec at [docs/specs/security-hardening.md](../docs/specs/security-hardening.md). Deviation: Task 6 used a custom `UserSessionTracker` instead of Spring Security `SessionRegistry` (registry is not populated by manual controller authentication).
+**Status:** Implemented (2026-06-10). All 8 findings fixed; spec at [docs/specs/security-hardening.md](../specs/security-hardening.md). Deviation: Task 6 used a custom `UserSessionTracker` instead of Spring Security `SessionRegistry` (registry is not populated by manual controller authentication).
 
 ## Overview
 
@@ -214,7 +214,7 @@ Security review found 4 HIGH and 4 MEDIUM issues in the auth/session layer. This
 
 **Files likely touched:**
 - `docs/architecture.md`
-- `plans/security-hardening.md` (check off tasks)
+- `docs/plans/security-hardening.md` (check off tasks)
 
 **Estimated scope:** S
 
