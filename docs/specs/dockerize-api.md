@@ -1,4 +1,4 @@
-# PRD: Dockerize API for Frontend Development
+# Spec: Dockerize API for Frontend Development
 
 > Source: [jorgetroya80/donations-api#2](https://github.com/jorgetroya80/donations-api/issues/2)
 
@@ -90,6 +90,6 @@ A good test for this feature verifies external behavior (HTTP response headers, 
 
 ## Further Notes
 
-- The frontend application will live in a separate repository. This PRD only covers the API containerization needed to support frontend development.
+- The frontend application will live in a separate repository. This spec only covers the API containerization needed to support frontend development.
 - CORS configuration is dev-profile only. Production profile already disables Swagger UI and should not enable CORS.
-- The existing `compose.yaml` only has a PostgreSQL service. This PRD adds the API service alongside it. Frontend devs who previously used compose for DB-only can still run `docker compose up postgres` if needed.
+- The existing `compose.yaml` only has a PostgreSQL service. This spec adds the API service alongside it. Frontend devs who previously used compose for DB-only can still run `docker compose up postgres` if needed.

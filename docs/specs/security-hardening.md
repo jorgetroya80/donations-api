@@ -1,6 +1,6 @@
 # Spec: Security Hardening — Donations API v1
 
-**Status:** Implemented (June 2026) | **Plan:** [plans/security-hardening.md](../plans/security-hardening.md)
+**Status:** Implemented (June 2026) | **Plan:** [plans/security-hardening.md](../../plans/security-hardening.md)
 
 ## Objective
 

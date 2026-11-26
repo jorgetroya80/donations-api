@@ -1,4 +1,4 @@
-# PRD: CI/CD Pipeline with GitHub Actions and Automated Releases
+# Spec: CI/CD Pipeline with GitHub Actions and Automated Releases
 
 ## Problem Statement
 
@@ -40,7 +40,7 @@ Implement GitHub Actions workflows that automatically build and test the applica
 - Tests use Testcontainers with PostgreSQL — no external DB needed
 - Existing test suite covers: donations, donors, expenses, financial reports, OpenAPI spec, security, CORS, user management
 - Prior art: all tests in `src/test/kotlin/com/example/donations/` follow Spring Boot Test + Testcontainers pattern
-- No new application tests needed — this PRD is infrastructure-only
+- No new application tests needed — this spec is infrastructure-only
 
 ## Out of Scope
 

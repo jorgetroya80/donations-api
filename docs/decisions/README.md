@@ -5,7 +5,7 @@ Donations API — and, just as importantly, the alternatives that were rejected 
 
 It complements the rest of `docs/`:
 
-- **`docs/PRD-*.md`** — *what* we are building (product requirements).
+- **`docs/specs/*.md`** — *what* we are building (specs and product requirements).
 - **`plans/*.md`** — *how* a given piece of work is sequenced (implementation plans).
 - **`docs/decisions/` (here)** — *why* a foundational choice was made the way it was.
 
@@ -31,7 +31,7 @@ fix). Those belong in the code, a commit message, or a plan.
 1. Copy [`ADR-template.md`](ADR-template.md) to `ADR-NNN-kebab-title.md`.
 2. Take the next free number — sequential, **never reused**, even if an ADR is superseded.
 3. Fill in all six sections. Cite real files (`path:line`) rather than describing code abstractly.
-4. Link the ADR from the PRD or plan that drove it, and link back from the ADR.
+4. Link the ADR from the spec or plan that drove it, and link back from the ADR.
 5. Add a row to the [index](#index) below.
 
 ## Lifecycle

@@ -1,6 +1,6 @@
 # Plan: Church Donations and Expenditure Management API
 
-> Source PRD: [jorgetroya80/donations-api#1](https://github.com/jorgetroya80/donations-api/issues/1) / `PRD.md`
+> Source PRD: [jorgetroya80/donations-api#1](https://github.com/jorgetroya80/donations-api/issues/1) / `docs/specs/donations-api.md`
 
 ## Architectural decisions
 

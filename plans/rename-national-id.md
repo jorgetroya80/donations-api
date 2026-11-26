@@ -1,6 +1,6 @@
 # Plan: Rename `dni_nie` to `national_id`
 
-> Source PRD: [docs/PRD-6.md](../docs/PRD-6.md) · [GitHub issue #23](https://github.com/jorgetroya80/donations-api/issues/23)
+> Source PRD: [docs/specs/rename-national-id.md](../docs/specs/rename-national-id.md) · [GitHub issue #23](https://github.com/jorgetroya80/donations-api/issues/23)
 
 ## Architectural decisions
 

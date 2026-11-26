@@ -35,7 +35,7 @@ Three forces constrain the shape of any answer:
    tier (ADR-002). Any design that assumes a collector, a hosted backend, or a paid plan is
    not viable, and the format chosen today must not foreclose adopting one later.
 
-PRD-8 (issue #47) drives this decision.
+The spec [`docs/specs/event-logging.md`](../specs/event-logging.md) (issue #47) drives this decision.
 
 ## Decision
 
@@ -72,7 +72,7 @@ per-request correlation id in MDC.
   appearing in logs, not **operator accounts**, whose actions this application already audits
   in `created_by`/`updated_by` (`AuditableEntity.kt:25-35`). Removing `actor` from domain
   events would mean answering "who recorded this donation?" with a database query — the exact
-  thing PRD-8's success criterion exists to avoid.
+  thing the event-logging spec's success criterion exists to avoid.
 - **Output format is Spring Boot's built-in structured logging, switched by profile** — the
   readable console pattern under `dev`, JSON under `prod`, configured in
   `src/main/resources/application.yaml` alongside the existing CORS and cookie-security
@@ -82,7 +82,7 @@ per-request correlation id in MDC.
   requires); the catch-all handler emits an event **and keeps its stacktrace**.
 - **Read operations emit nothing.** Only state changes and security decisions produce events.
 
-Implementation is pending; see PRD-8 (issue #47).
+Implementation is pending; see [`docs/specs/event-logging.md`](../specs/event-logging.md) (issue #47).
 
 ## Alternatives Considered
 

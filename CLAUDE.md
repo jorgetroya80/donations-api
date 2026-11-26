@@ -93,4 +93,4 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Decision Records
 
-Significant or hard-to-reverse decisions (auth, data model, deploy/infra, framework/major dependency, breaking API changes) get an ADR in `docs/decisions/`. Copy `docs/decisions/ADR-template.md` to `ADR-NNN-kebab-title.md`, fill all six sections, and add a row to the index in `docs/decisions/README.md`. Link the ADR from the driving PRD/plan. **Never edit an Accepted ADR — supersede it with a new one.** See `docs/decisions/README.md` for the full process.
+Significant or hard-to-reverse decisions (auth, data model, deploy/infra, framework/major dependency, breaking API changes) get an ADR in `docs/decisions/`. Copy `docs/decisions/ADR-template.md` to `ADR-NNN-kebab-title.md`, fill all six sections, and add a row to the index in `docs/decisions/README.md`. Link the ADR from the driving spec/plan. **Never edit an Accepted ADR — supersede it with a new one.** See `docs/decisions/README.md` for the full process.

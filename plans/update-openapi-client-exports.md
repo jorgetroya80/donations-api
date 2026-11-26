@@ -1,6 +1,6 @@
 # Plan: Export Client Factory from API Client Package
 
-> Source PRD: docs/PRD-7.md
+> Source PRD: docs/specs/update-openapi-client-exports.md
 
 ## Architectural decisions
 

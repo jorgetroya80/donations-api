@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implements [`docs/audit-log-spec.md`](../docs/audit-log-spec.md) (approved 2026-11-23) — decision in [ADR-006](../docs/decisions/ADR-006-audit-log.md): an append-only `audit_log` table recording who and when for every create/update of donations, expenses, donors and users. App-written, same transaction as the change, identifiers only. Work on branch `feat/audit-log`; Jorge commits.
+Implements [`docs/specs/audit-log.md`](../docs/specs/audit-log.md) (approved 2026-11-23) — decision in [ADR-006](../docs/decisions/ADR-006-audit-log.md): an append-only `audit_log` table recording who and when for every create/update of donations, expenses, donors and users. App-written, same transaction as the change, identifiers only. Work on branch `feat/audit-log`; Jorge commits.
 
 ## Progress
 
@@ -46,7 +46,7 @@ T3, T4, T5 are independent of each other once T2 is green.
 #### T1: ADR-006 — append-only audit log
 - **Acceptance:** `docs/decisions/ADR-006-audit-log.md` filled in all six template sections, status `Proposed`; index row added to `docs/decisions/README.md`; spec and idea doc link to it. Rejected alternatives (Envers, DB triggers, event-log sink, immutable ledger) recorded with reasons.
 - **Verify:** Jorge reads and sets status to `Accepted`.
-- **Files:** `docs/decisions/ADR-006-audit-log.md` (new), `docs/decisions/README.md`, `docs/audit-log-spec.md`.
+- **Files:** `docs/decisions/ADR-006-audit-log.md` (new), `docs/decisions/README.md`, `docs/specs/audit-log.md`.
 - **Size:** S
 
 #### T2: Tracer bullet — donation create/update audited end to end

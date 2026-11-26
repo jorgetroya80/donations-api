@@ -1,4 +1,4 @@
-# PRD-5: Generate and Publish Typed API Client npm Package on Release
+# Spec: Generate and Publish Typed API Client npm Package on Release
 
 > GitHub Issue: https://github.com/jorgetroya80/donations-api/issues/18
 

@@ -34,7 +34,7 @@ Import: `org.springframework.data.web.config.EnableSpringDataWebSupport`. Contro
 Before (root level): `totalElements`, `totalPages`, `pageable`, `sort`, `first`, `last`, `numberOfElements`, `empty`...
 After: `{ "content": [...], "page": { "size", "number", "totalElements", "totalPages" } }`
 
-`packages/api-client/src/generated/types.gen.ts` changes (`PageDonationResponse` types, etc.) → **major bump of the `api-client` package**; consumers migrate `totalElements` → `page.totalElements`. `docs/PRD.md` does not pin the JSON shape, no documentation impact.
+`packages/api-client/src/generated/types.gen.ts` changes (`PageDonationResponse` types, etc.) → **major bump of the `api-client` package**; consumers migrate `totalElements` → `page.totalElements`. `docs/specs/donations-api.md` does not pin the JSON shape, no documentation impact.
 
 ## Verification
 

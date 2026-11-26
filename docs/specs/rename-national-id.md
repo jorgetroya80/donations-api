@@ -1,4 +1,4 @@
-# PRD: Rename `dni_nie` to `national_id` for International Generality
+# Spec: Rename `dni_nie` to `national_id` for International Generality
 
 ## Problem Statement
 
@@ -64,5 +64,5 @@ Rename the `dni_nie` column (and all corresponding code references) to `national
 
 ## Further Notes
 
-- Once a `country` field is added to the donors table in a future PRD, the `@ValidNationalId` validator can be extended to dispatch country-specific rules without changing the field name or annotation name.
+- Once a `country` field is added to the donors table in a future spec, the `@ValidNationalId` validator can be extended to dispatch country-specific rules without changing the field name or annotation name.
 - If a production release is ever cut before this change is merged, the approach should switch from editing V4 in place to adding a V5 `ALTER TABLE` migration.

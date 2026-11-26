@@ -1,6 +1,6 @@
 # Plan: Externalize Configuration — Database, Docker, and CORS
 
-> Source PRD: GitHub issue #12 / docs/PRD-4.md
+> Source PRD: GitHub issue #12 / docs/specs/externalize-config.md
 
 ## Architectural decisions
 

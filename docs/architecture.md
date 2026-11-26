@@ -552,7 +552,7 @@ sequenceDiagram
 | Default credentials | `must_change_password` flag (V7). `PasswordChangeRequiredFilter` returns 403 `{"code":"PASSWORD_CHANGE_REQUIRED"}` for flagged sessions everywhere except `PUT /api/v1/users/me/password` and `POST /api/v1/logout`. Admin-provisioned passwords (create user, admin reset) are always provisional; `LoginResponse.mustChangePassword` lets the frontend redirect |
 | Session revocation | `UserSessionTracker`: self-service password change revokes the user's other sessions; admin password reset revokes all of the target's sessions |
 
-Details and decisions: [docs/specs/security-hardening.md](security-hardening.md)
+Details and decisions: [docs/specs/security-hardening.md](specs/security-hardening.md)
 
 ---
 
@@ -736,7 +736,7 @@ src/main/resources/
 
 ## 10. Observability — Event Logging
 
-The application emits a **closed, typed set of events** rather than free-form log statements. Names follow the [OWASP Application Logging Vocabulary](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html); domain events extend the same `noun_verb` grammar. See [ADR-005](decisions/ADR-005-event-logging-personal-data-policy.md) for the decision and [PRD-8](PRD-8.md) for the requirements.
+The application emits a **closed, typed set of events** rather than free-form log statements. Names follow the [OWASP Application Logging Vocabulary](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html); domain events extend the same `noun_verb` grammar. See [ADR-005](decisions/ADR-005-event-logging-personal-data-policy.md) for the decision and [`docs/specs/event-logging.md`](specs/event-logging.md) for the requirements.
 
 ### Why a type per event
 
