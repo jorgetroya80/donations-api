@@ -91,6 +91,17 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Flyway:** enabled (`spring.flyway.enabled: true`); migrations V1–V9 live in `src/main/resources/db/migration/` — applied migrations are immutable, schema changes go in new versions
 - **Profiles:** `dev` enables CORS (`app.cors.enabled`, origins via `APP_CORS_ALLOWED_ORIGINS`, default `http://localhost:8080`); `prod` disables springdoc (Swagger UI + api-docs) and marks the session cookie `Secure`
 
+## Where Documents Go
+
+Save new documents in these folders, never in the repo root or `tasks/`. This overrides skill defaults (e.g. `SPEC.md` in the root, `tasks/plan.md`, `tasks/todo.md`):
+
+- **Ideas** (raw, not yet approved) → `docs/ideas/kebab-subject.md`
+- **Specs** (what and why) → `docs/specs/kebab-subject.md`
+- **Plans** (how, in order) → `docs/plans/kebab-subject.md`, task list in `docs/plans/kebab-subject-todo.md`
+- **Decisions** → `docs/decisions/ADR-NNN-kebab-title.md` (see below)
+
+Use the same subject name across idea, spec and plan, and link each to the next. See `AGENTS.md` for details.
+
 ## Decision Records
 
 Significant or hard-to-reverse decisions (auth, data model, deploy/infra, framework/major dependency, breaking API changes) get an ADR in `docs/decisions/`. Copy `docs/decisions/ADR-template.md` to `ADR-NNN-kebab-title.md`, fill all six sections, and add a row to the index in `docs/decisions/README.md`. Link the ADR from the driving spec/plan. **Never edit an Accepted ADR — supersede it with a new one.** See `docs/decisions/README.md` for the full process.
